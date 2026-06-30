@@ -1,0 +1,81 @@
+AeroTwin-Edge — 48-HOUR POC BUILD RUNBOOK
+The whole POC = ONE unbroken 2-minute chain, one tail, one defect, all offline.
+Real where it's cheap to be real; seeded where real would cost days.
+
+==================================================================
+THE ONE FEATURE TO NAIL (judges reward this above all)
+==================================================================
+Calibrated millimetre severity-grading of a detected defect against the SRM
+allowable-damage-limit table, feeding a per-tail crack-growth prediction.
+That is the bridge from "a CV model saw something" to "an airworthiness decision."
+A bounding box is a commodity; px->mm->SRM-grade->cycles-to-limit is not. If the
+rest were mocked, this chain being REAL still carries the submission.
+
+==================================================================
+A. REAL CORE  (~4-6 hrs, one ML person)  -> detect_and_size.py
+==================================================================
+1. pip install ultralytics opencv-contrib-python numpy matplotlib
+   (opencv-contrib-python is required for cv2.aruco; needs OpenCV >= 4.7.)
+2. Print an ArUco marker (DICT_4X4_50, id 0), known edge length (default 50 mm).
+   MEASURE the printed marker with calipers and set ARUCO_MARKER_MM accordingly —
+   that is your one real-world calibration knob.
+3. Collect ~5 crack images with the marker in frame: SDNET2018 / NEU-DET, or real
+   photos of a scored aluminium panel. (Public sets are fine for the POC.)
+4. Self-check the sizing logic with no model/images needed:
+       python detect_and_size.py --selftest        # prints "selftest ok"
+5. Run the full pipeline on an image:
+       python detect_and_size.py panel_with_aruco.jpg
+   Output, e.g.:  crack 8.0 mm — MAJOR — 67% of 12 mm SRM limit
+   (Pretrained yolov8n-seg.pt is generic; for a crisp crack mask, optionally
+   fine-tune 1-2 hrs on SDNET2018 and point YOLO() at your weights.)
+
+==================================================================
+B. REAL-BUT-SEEDED SHELL  (~4-6 hrs)  -> twin_console.py  (Streamlit)
+==================================================================
+1. pip install streamlit numpy matplotlib
+2. streamlit run twin_console.py
+3. Shows: tail VT-XYZ, ATA 53 / stringer 14, current finding, condition history
+   (6.0 -> 8.0 mm), crack-growth projection crossing the 12 mm limit, and an agent
+   work-order draft citing SRM 53-xx with a sign-off button.
+   The detection NUMBER is real (from part A); the twin history and growth constants
+   are seeded for the POC. Say so on the slide, not in the demo narration.
+
+==================================================================
+C. EDGE FRAMING  (~1 hr filming)
+==================================================================
+- Put the Pi 5 in airplane mode (show the no-network indicator), camera attached,
+  filmed beside the panel.
+- Run inference on the laptop and narrate honestly: "inference runs on the edge node;
+  mirrored to this screen for capture." If you can copy the model onto the Pi and show
+  even a slow REAL FPS, do it — but never fake an FPS.
+
+==================================================================
+NOTE ON THE "~40 CYCLES" FIGURE  (read before recording)
+==================================================================
+The script/slides say the crack crosses the 12 mm limit in ~40 flight cycles, and
+twin_console.py uses PROJECTED_CYCLES = 40 so the chart matches. Be aware: your own
+problem-statement Annex C implies a few HUNDRED cycles for an 8->12 mm growth band.
+40 cycles is a deliberately aggressive "fast-growth" scenario. Two honest options:
+  (a) Keep 40 and frame it as a rapidly-progressing defect (e.g. post lightning-
+      strike) — then say that in the narration.
+  (b) Raise it (e.g. ~300) to match standard DTA — then update VIDEO_SCRIPT.txt,
+      SLIDE_BLUEPRINT.txt (slides 4 & 8) and PROJECTED_CYCLES together.
+Whichever you pick: the number you SAY, the chart, and the slides must all agree.
+
+==================================================================
+VERIFICATION (before you record)
+==================================================================
+1. Offline: disconnect network, run detect_and_size.py on the 5 images -> sane mm
+   for each. If it needs the network, the edge story is dead — fix first.
+2. Sizing: hand-measure one crack; confirm ArUco mm within tolerance; record error %.
+3. Progression: confirm the projected limit-crossing is monotonic and plausible.
+4. Agent guardrail: query a defect with no SRM excerpt -> it must refuse/escalate,
+   not invent a limit.
+5. Record one clean end-to-end BACKUP take before the real recording.
+
+==================================================================
+DELIBERATELY NOT BUILT (state on the architecture slide)
+==================================================================
+Federated learning, secure aggregation, differential privacy, Hailo acceleration,
+OTA registry, real hash-chain crypto. Architected on the deck, deferred to Stage 3.
+A narrow flawless chain beats a broad broken one.

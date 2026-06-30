@@ -1,0 +1,64 @@
+AeroTwin-Edge — 2-MINUTE VIRTUAL POC SCRIPT
+Record screen with OBS Studio (free); film the Pi on a phone; cut in DaVinci
+Resolve or CapCut (free). Total ~120 s. Time-coded [SCREEN] / [SAY].
+
+CONSISTENCY RULE: the cycle number you SAY here, the number on the dashboard
+chart, and the number on SLIDE 4/8 must all match. This script uses ~40 cycles;
+twin_console.py uses PROJECTED_CYCLES = 40. Change all three together if you
+adjust it. (See POC_BUILD_RUNBOOK.txt — note on the 40-cycle figure.)
+
+------------------------------------------------------------------
+[0:00-0:15]  HOOK
+  [SCREEN] Title slide: "AeroTwin-Edge — Offline Edge AI for Aircraft Structural
+           Inspection". Sub-line: "AOG cost: up to Rs 1.25 crore / hour."
+  [SAY] "An aircraft on ground costs an operator up to one-point-two-five crore
+         rupees an hour. Yet the structural inspection that decides whether that jet
+         flies is still manual, subjective, and paper-trailed. AeroTwin-Edge moves
+         that decision to the edge — fully offline, inside the hangar."
+
+[0:15-0:30]  THE EDGE DEVICE  (live Pi footage)
+  [SCREEN] Raspberry Pi 5 + camera on the bench, airplane-mode / no-network shown.
+  [SAY] "This is the entire inspection lab — a ten-thousand-rupee Raspberry Pi 5 in
+         airplane mode. No cloud, no network. That is mandatory inside ITAR-restricted
+         hangars, where inspection imagery legally cannot leave the site."
+
+[0:30-0:55]  REAL DETECTION + SIZING  (the key feature — screen recording)
+  [SCREEN] Load a cracked skin-panel image with an ArUco marker; run detection; mask
+           overlays the crack; "8.0 mm" and "MAJOR — 67% of 12 mm SRM limit" print.
+  [SAY] "We scan a fuselage skin panel. Our model segments the crack — pixel-accurate
+         geometry, not a coarse box. Using an ArUco fiducial we convert pixels to
+         millimetres: this crack is eight millimetres. We grade it against the
+         Structural Repair Manual limit table — twelve millimetres allowable — so it
+         is a major finding at sixty-seven percent of limit. That is the leap: from
+         'the AI saw something' to a calibrated airworthiness measurement."
+
+[0:55-1:20]  TWIN + PROGRESSION  (dashboard)
+  [SCREEN] Console: tail VT-XYZ, ATA 53 / stringer 14, history 6.0 mm -> 8.0 mm,
+           Paris-law curve crossing the 12 mm limit.
+  [SAY] "Every finding writes into a digital twin for this exact tail number. Last
+         C-check, this crack was six millimetres; it has grown to eight. Our
+         crack-growth model projects it crosses the SRM limit in about forty flight
+         cycles — so the system pulls this inspection forward, instead of waiting for
+         the calendar. That is the shift from scheduled to condition-based maintenance."
+
+[1:20-1:45]  AGENTIC COPILOT
+  [SCREEN] Agent drafts a work order citing SRM 53-xx; "Awaiting certifying-engineer
+           sign-off" button.
+  [SAY] "An on-device agent retrieves the governing repair scheme and drafts the work
+         order — every claim cited to a manual section, never invented. The certifying
+         engineer reviews and signs. The AI assists; the human stays accountable. And
+         every step is hash-chain logged for audit."
+
+[1:45-2:00]  CLOSE
+  [SCREEN] Architecture diagram, federated-fleet layer highlighted as roadmap.
+  [SAY] "One tail today; a fleet tomorrow — improving through federated learning while
+         raw imagery never leaves the site. Offline, certifiable, and built for the
+         four-billion-dollar Indian MRO market Tata is standing up right now.
+         AeroTwin-Edge: the system that decides what to fix, and when — and proves it."
+------------------------------------------------------------------
+
+DELIVERY TIPS
+- One continuous take per segment; calm, declarative voice.
+- Show the mm number and the SRM limit on screen long enough to read.
+- Do NOT rush the detection moment (0:30-0:55) — that is the credibility shot.
+- Record one clean end-to-end backup take and keep it on disk before the real one.

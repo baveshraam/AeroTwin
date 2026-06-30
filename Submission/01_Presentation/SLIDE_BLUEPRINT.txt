@@ -1,0 +1,177 @@
+AeroTwin-Edge — SLIDE-BY-SLIDE BLUEPRINT (copy-paste onto your deck)
+Sentence case for readability; lowercase to match the form's canonical style if you
+prefer. Acronyms expanded on first use. Keep "MEASURED vs PROJECTED" splits intact —
+that honesty reads as engineering maturity.
+
+================================================================
+SLIDE 0 — TITLE
+================================================================
+AeroTwin-Edge
+Offline Edge AI for Aircraft Structural Inspection & Defect Detection
+— with per-tail digital twin, condition-based predictive maintenance,
+  and federated fleet learning.
+
+Tata Technologies InnoVent-27 | Track 3.2.3 Aerospace
+Edge AI for Intelligent Inspection & Defect Detection
+Team: [names] | Stage 2 — Virtual Proof of Concept
+
+================================================================
+SLIDE 1 — PROBLEM STATEMENT
+================================================================
+Aircraft structural inspection is still manual, visual and calendar-driven —
+and it fails in three ways at the point of work:
+
+- Inconsistent detection. Probability of Detection for fine cracks and early
+  corrosion varies with inspector skill, experience and fatigue; severity is
+  judged against SRM limits by eye, so the airworthiness measurement is rarely
+  repeatable.
+- Poor traceability. Findings sit on paper task cards and siloed systems. There
+  is no continuous condition history per tail number, so "did this crack grow
+  since the last C-check?" is genuinely hard to answer.
+- Reactive and costly. Inspection runs under AOG conditions (~ Rs 8 lakh-1.25
+  crore per hour). Fixed-interval checks over-maintain healthy structure while
+  failing to advance maintenance on fast-growing defects.
+
+And cloud AI cannot help: ITAR-restricted hangars are network-isolated and
+imagery legally cannot leave the site.
+
+================================================================
+SLIDE 2 — OBJECTIVE
+================================================================
+Deliver an offline, edge-resident inspection capability that runs on a
+Raspberry Pi-class device and, in a single pass:
+
+1. Detects, segments and severity-grades structural defects against SRM
+   allowable-damage limits — turning a subjective visual judgement into a
+   repeatable, millimetre-accurate measurement.
+2. Records every finding in a persistent digital twin per tail number, tracks
+   defect progression across checks, and predicts the flight cycle at which a
+   defect crosses its limit.
+3. Drafts the manual-cited work order via an agentic copilot, with the
+   certifying engineer retaining final authority.
+
+Goal: shift aircraft structural maintenance from reactive/calendar-based to
+predictive/condition-based — fully offline and ITAR-compliant.
+
+================================================================
+SLIDE 3 — APPROACH
+================================================================
+Edge-first, because the domain forces it:
+- Hangars are RF-restricted and often network-dead.
+- ITAR/EAR/data-sovereignty: OEM and defence imagery cannot hit public cloud.
+- AOG economics: a verdict in seconds at the aircraft beats an upload loop.
+
+Build one narrow, flawless vertical slice; architect the rest:
+- BUILT (L0-L3): edge detect + segment + mm severity grade -> per-tail twin ->
+  Paris-law progression -> agentic, manual-cited work order.
+- ROADMAP (L4-L6): federated fleet learning, closed-loop MRO ops, AR overlay.
+
+Data-scarcity answer (built in, not bolted on): self-supervised backbones +
+unsupervised anomaly detection + synthetic defects + active learning, so we do
+not depend on thousands of labelled aerospace defect images.
+
+================================================================
+SLIDE 4 — SOLUTION OVERVIEW
+================================================================
+AeroTwin-Edge — Condition-Based Structural Health Management at the edge.
+
+The unbroken chain (one tail, one defect, all offline on the Pi):
+  Crack on a skin panel
+    -> DETECT + GRADE  "ATA 53, stringer 14, crack 8.0 mm — MAJOR (67% of limit)"
+    -> TWIN            "tail VT-XYZ, was 6.0 mm last C-check, +2.0 mm"
+    -> PREDICT         "crosses the 12 mm SRM limit in ~40 flight cycles"
+    -> AGENT           drafts a work order citing SRM 53-xx; certifying staff sign
+  Hash-chain logged. Pi in airplane mode. Verdict in seconds.
+
+Not "an AI that spots cracks" — the system that decides, per tail, what to fix
+and when, and proves it to the regulator.
+
+================================================================
+SLIDE 5 — TECHNICAL IMPLEMENTATION
+================================================================
+IMPLEMENTED (this POC):
+- Detection/segmentation: YOLO segmentation with SAHI tiling for thin, small,
+  high-aspect-ratio cracks (pixel-accurate masks, not coarse boxes).
+- Severity/sizing: OpenCV + ArUco fiducial -> pixels to millimetres, graded
+  against a configurable SRM allowable-damage-limit table.
+- Digital twin: per-tail store; findings pinned to ATA zone / station / stringer.
+- Progression: Paris-law fatigue crack-growth model -> cycles-to-limit.
+- Agentic copilot: retrieval-grounded drafting over an AMM/SRM excerpt corpus,
+  citation-required, human sign-off gate.
+- Edge runtime: offline execution on Raspberry Pi 5; latency shown on screen.
+
+ARCHITECTED (roadmap):
+- Unsupervised anomaly detection (PatchCore / EfficientAD) for unknown defects.
+- INT8 quantization + pruning/distillation; optional Hailo-8L accelerator.
+- Federated learning (Flower / FedAvg) with secure aggregation + differential
+  privacy — models improve across the fleet; raw imagery never leaves the site.
+- Hash-chained, tamper-evident audit trail; signed models; OTA registry.
+
+Stack: PyTorch, Ultralytics/YOLO, OpenCV, ONNX Runtime / TFLite / NCNN,
+FastAPI/Streamlit, SQLite, a small local LLM for RAG. Bootstrap data: NEU-DET,
+SDNET2018, GAPs + synthetic defects.
+
+================================================================
+SLIDE 6 — CHALLENGES FACED
+================================================================
+- Data scarcity (no large aerospace defect corpus)
+    -> unsupervised anomaly detection + synthetic generation + transfer + active
+       learning, designed in from the start.
+- Thin, tiny cracks evade naive detectors
+    -> SAHI high-resolution tiling + a segmentation head for accurate geometry.
+- Pixels are not airworthiness
+    -> ArUco fiducial calibration to millimetres, with stated measurement
+       uncertainty (gauge R&R mindset).
+- Edge compute ceiling (Pi 5 has no built-in NPU)
+    -> INT8 quantization, pruning, distillation; optional Hailo-8L; "minimum
+       resource" is the thesis, not a compromise.
+- LLM hallucination is unacceptable in a safety context
+    -> citation-required guardrail; the agent refuses and escalates rather than
+       inventing a limit; certifying-staff sign-off gate.
+- Certification credibility
+    -> decision-support framing, audit trail, and named standards (EASA ML
+       learning assurance, SAE G-34/AS6983) — building for the audit from day one.
+
+================================================================
+SLIDE 7 — RESULTS / ACHIEVEMENTS
+================================================================
+MEASURED (POC — insert real numbers on demo day):
+- Detector recall on held-out test folder: [measure]
+- ArUco sizing error vs hand-measured defect: [measure] %
+- On-device / laptop latency per scan: [measure] s   (state CPU vs accelerator)
+
+PROJECTED / ILLUSTRATIVE (engineering analysis — to validate, not yet deployed):
+- Detection-capability lever: reducing reliably detected crack size from ~4 mm
+  to ~2 mm, applied through Damage Tolerance Analysis, can roughly DOUBLE the
+  safe interval between inspections — realisable as lower inspection cost OR
+  greater safety margin.
+- Economics: one avoided AOG ground day ~ Rs 2 crore; the system can recover its
+  cost on a single prevented event. Edge node ~ Rs 10,000, no recurring cloud cost.
+- Capability reported as Probability of Detection at a90/95 (NDT industry metric),
+  not model accuracy — preserving credibility with regulators and certifying staff.
+- Market: Indian MRO ~ $2B -> $4B by 2030 within a >$100B global MRO market, where
+  Tata and Air India hold a central position.
+
+(All projected figures are clearly labelled as engineering projections, consistent
+with Damage Tolerance Analysis and published MRO economics; final values pending
+physical validation.)
+
+================================================================
+SLIDE 8 — DEMONSTRATION
+================================================================
+Live / recorded virtual POC — one tail, one defect, fully offline on the Pi:
+
+  1. Scan a cracked skin panel (ArUco fiducial in frame).
+  2. REAL: detect + segment the crack -> size to 8.0 mm -> grade MAJOR against the
+     12 mm SRM limit.
+  3. Digital twin: tail VT-XYZ, ATA 53 / stringer 14; was 6.0 mm last C-check.
+  4. Progression: Paris-law projects crossing the 12 mm limit in ~40 cycles ->
+     pull the inspection forward (condition-based, not calendar-based).
+  5. Agent drafts the work order citing SRM 53-xx; certifying engineer signs.
+  6. Pi in airplane mode throughout; every step hash-chain logged.
+
+What is real vs roadmap is stated openly — detection, sizing, grading, twin,
+progression and the cited work order are demonstrated; federation and full
+certification are the roadmap.
+
+[Embed: aerotwin_poc_2min.mp4 — see 02_POC_Media/video/]

@@ -1,0 +1,3 @@
+diagrams/ — illustrative architecture & concept diagrams (allowed to be illustrative).
+Make in draw.io / Excalidraw / PowerPoint. See ../MEDIA_CHECKLIST.txt for the exact
+list (01_system_architecture ... 06_dta_lever). Mark BUILT vs ROADMAP on the stack.

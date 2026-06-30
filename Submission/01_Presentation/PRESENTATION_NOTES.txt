@@ -1,0 +1,72 @@
+AeroTwin-Edge — HOW TO FILL THE MANDATORY SECTIONS
+(Technical Implementation / Challenges Faced / Results) when you only have
+simulations and no real-world deployment data yet.
+
+PRINCIPLE: separate "implemented" from "architected," and label every projection.
+Honesty about scope reads as engineering maturity, not weakness. The literal slide
+text is in SLIDE_BLUEPRINT.txt; this file explains how to talk to each section so
+your answers survive SME questioning.
+
+------------------------------------------------------------------
+TECHNICAL IMPLEMENTATION
+------------------------------------------------------------------
+Describe the real architecture, then give a clear REAL vs ROADMAP split.
+
+IMPLEMENTED (POC, demonstrably runs):
+- YOLO detection + segmentation (SAHI tiling for thin cracks)
+- OpenCV + ArUco px->mm sizing
+- Configurable SRM allowable-damage-limit table (srm_limits.csv)
+- Per-tail twin store (seeded JSON/SQLite for the POC)
+- Paris-law progression module -> cycles-to-limit
+- Retrieval-grounded agent drafting a cited work order, human sign-off gate
+- Offline execution on Raspberry Pi-class hardware
+
+ARCHITECTED (roadmap, designed not built):
+- Unsupervised anomaly path (PatchCore / EfficientAD)
+- INT8 quantization + optional Hailo-8L
+- Federated learning (Flower / FedAvg) + secure aggregation + differential privacy
+- Hash-chained audit trail, signed models, OTA registry
+
+Say it out loud: "Everything in the BUILT column is what you just saw run offline.
+The ROADMAP column is fully architected and is the Stage-3 / productisation path."
+
+------------------------------------------------------------------
+CHALLENGES FACED   (real engineering problems — no deployment needed to have hit them)
+------------------------------------------------------------------
+- Aerospace defect data is scarce
+    -> unsupervised anomaly detection + synthetic generation + transfer learning +
+       active learning, designed in from the start.
+- Cracks are thin, tiny, high-aspect-ratio; naive detectors miss them
+    -> SAHI tiling + a segmentation head for pixel-accurate geometry.
+- Pixels are not airworthiness
+    -> ArUco fiducial calibration to millimetres, with a stated measurement
+       uncertainty.
+- Edge compute ceiling (Pi 5 has no built-in NPU)
+    -> INT8 quantization / pruning / distillation; optional Hailo-8L; "minimum
+       resource" is the thesis, not a compromise.
+- LLM hallucination is unacceptable in a safety context
+    -> citation-required guardrail; the agent refuses and escalates rather than
+       inventing a limit; human sign-off gate.
+
+These are honest because you genuinely reasoned through each one while scoping the
+POC. Do not invent "deployment" challenges (e.g. "field WiFi dropped") you did not hit.
+
+------------------------------------------------------------------
+RESULTS / ACHIEVEMENTS   (two clearly separated columns)
+------------------------------------------------------------------
+MEASURED (POC) — fill on demo day, do NOT pre-fill:
+- detector recall on the held-out test folder
+- ArUco sizing error vs hand-measured defect (%)
+- measured laptop/Pi latency or FPS (state CPU-only vs accelerated)
+
+PROJECTED / ILLUSTRATIVE (engineering analysis, labelled as such):
+- lowering reliably detected crack size from ~4 mm to ~2 mm roughly doubles the
+  safe-life inspection band via Damage Tolerance Analysis
+- one avoided AOG ground day ~ Rs 2 crore; edge node ~ Rs 10,000, no cloud cost
+- capability reported as POD a90/95 (NDT industry metric), not model accuracy
+- Indian MRO ~ $2B -> $4B by 2030 within a >$100B global MRO market
+
+How to present projections credibly: show the METHOD, not just the number. For the
+DTA lever, show the Paris-law integral and the a_d -> interval relationship; for AOG
+savings, cite the per-hour ground cost. A judge attacks an unsupported number; they
+respect a labelled projection backed by a method.

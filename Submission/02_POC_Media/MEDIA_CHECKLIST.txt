@@ -1,0 +1,56 @@
+AeroTwin-Edge — 02_POC_Media CHECKLIST
+Capture exactly these so the folder looks fully populated and professional.
+Put a one-line notes.txt in each subfolder naming what is real vs illustrative.
+
+------------------------------------------------------------------
+diagrams/   (make in draw.io / Excalidraw / PowerPoint — all free)
+------------------------------------------------------------------
+[ ] 01_system_architecture.png  — the L0-L6 stack; mark L0-L3 "BUILT", L4-L6 "ROADMAP".
+[ ] 02_data_flow.png            — capture -> detect+segment -> ArUco mm sizing -> SRM
+                                  grade -> twin -> Paris-law prediction -> agent work
+                                  order -> certifying-engineer sign-off.
+[ ] 03_hardware_block.png       — Pi 5 8GB + camera + (optional) Hailo-8L M.2;
+                                  "offline / no inbound network" callout.
+[ ] 04_edge_vs_cloud.png        — side-by-side: cloud (blocked by ITAR, latency,
+                                  network-dead hangar) vs edge (offline, seconds-to-verdict).
+[ ] 05_ata_zone_map.png         — aircraft silhouette with ATA chapters
+                                  (51/52/53/54/55/57); VT-XYZ finding pinned to
+                                  ATA 53 / stringer 14.
+[ ] 06_dta_lever.png            — the 4 mm->2 mm detectable-size -> doubled
+                                  inspection-interval chart.
+
+------------------------------------------------------------------
+screenshots/   (PNG, full-resolution, captured from the REAL demo)
+------------------------------------------------------------------
+[ ] 01_detection_overlay.png    — crack mask + ArUco marker + "8.0 mm" printed.
+[ ] 02_severity_grade.png       — SRM limit-table lookup ("MAJOR — 67% of 12 mm").
+[ ] 03_twin_console.png         — dashboard: tail, ATA location, current finding.
+[ ] 04_history_progression.png  — 6.0 -> 8.0 mm history table + trend.
+[ ] 05_paris_curve.png          — crack-growth curve crossing 12 mm at ~+40 cycles.
+[ ] 06_agent_workorder.png      — drafted work order citing SRM 53-xx, sign-off pending.
+[ ] 07_pi_offline_terminal.png  — Pi terminal, airplane mode, inference log + timing.
+
+------------------------------------------------------------------
+video/
+------------------------------------------------------------------
+[ ] aerotwin_poc_2min.mp4       — the main walkthrough (VIDEO_SCRIPT.txt).
+[ ] detection_only_30s.mp4      — silent close-up of the real detection+sizing run.
+[ ] pi_device_broll_20s.mp4     — the Pi 5 + camera, airplane-mode indicator, panel.
+
+------------------------------------------------------------------
+graphs/   (matplotlib; LABEL each PROJECTED vs MEASURED)
+------------------------------------------------------------------
+[ ] 01_pod_curve.png            — POD methodology + preliminary POD(a) curve on your
+                                  test set, a90/95 marked ("preliminary,
+                                  MIL-HDBK-1823A methodology").
+[ ] 02_paris_growth.png         — full crack-growth projection (also on Results slide).
+[ ] 03_fps_latency.png          — bar chart, CPU vs Hailo; mark measured vs target.
+[ ] 04_interval_lever.png       — inspection interval: manual (a_d~4 mm) vs AI (a_d~2 mm).
+
+------------------------------------------------------------------
+HONESTY RULE
+------------------------------------------------------------------
+Every screenshot under screenshots/ must come from a REAL run of detect_and_size.py
+or twin_console.py. Diagrams and the POD curve are allowed to be illustrative — say
+so on the asset ("illustrative" / "preliminary methodology"). Never label a projected
+number as measured.

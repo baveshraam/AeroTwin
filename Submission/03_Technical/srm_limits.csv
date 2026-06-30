@@ -1,0 +1,5 @@
+defect_class,limit_mm,srm_ref,notes
+crack,12.0,SRM 53-XX-XX,fuselage skin fatigue crack allowable (illustrative)
+corrosion,3.0,SRM 51-XX-XX,pitting depth allowable (illustrative)
+dent,6.0,SRM 53-XX-XX,dent depth/diameter allowable (illustrative)
+gouge,2.0,SRM 51-XX-XX,gouge depth allowable (illustrative)

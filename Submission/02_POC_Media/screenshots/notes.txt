@@ -1,0 +1,3 @@
+screenshots/ — MUST come from REAL runs of detect_and_size.py / twin_console.py.
+See ../MEDIA_CHECKLIST.txt for the exact list (01_detection_overlay ...
+07_pi_offline_terminal). Never label a projected number as measured.
