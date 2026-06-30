@@ -1,0 +1,38 @@
+nnoVent solutions for a better world​
+We offer engineering students a platform to develop solutions addressing key challenges in Automotive, Industrial Heavy Machinery, and Aerospace industries. These can be tackled using Edge AI, leveraging technologies like AI, Generative AI, Agentic AI, IoT, Embedded Software, Digital Twins, and AR/VR—enabling real-time processing, faster decisions, improved efficiency, and intelligent automation at the source.
+
+#ComeJoinUs in #EngineeringABetterWorld
+
+Register now
+An innovation platform where young engineers unleash their creativity, showcase groundbreaking ideas, and transform them into impactful solutions.
+
+InnoVent-27 theme – AI at the Edge: AI solutions for Automotive, Aerospace, and Industrial Heavy Machinery (IHM) industries
+
+AI at the Edge Solutions for Automotive, participants can focus on developing innovations such as Edge AI for ADAS and autonomous systems, electric and sustainable mobility, vehicle health and predictive maintenance, smart manufacturing and digital twins, personalized and connected vehicles, as well as automotive cybersecurity—addressing the evolving needs of next‑generation mobility.
+
+AI at the Edge Solutions for Industrial Heavy Machinery, opportunities include building solutions around autonomous and intelligent heavy machines, sustainable and energy-efficient industrial systems, smart manufacturing and construction sites, operator safety and human–machine interaction, and connected, secure, and intelligent industrial ecosystems to enhance operational efficiency and safety.
+
+In AI at the Edge Solutions for Aerospace, participants can explore applications such as digital twin-enabled MRO, connected and secure MRO ecosystems, predictive maintenance and aircraft health monitoring, intelligent inspection and defect detection, as well as connected, secure, software-defined aerospace systems and sustainable aviation with energy optimization.
+
+Learn more about the rules and regulations here.
+
+
+
+Innovent
+Innovating the Future with Edge AI‑Enabled Smart Solutions
+AI at the Edge is defined as the deployment and execution of artificial intelligence models and algorithms directly on edge devices or near the point where data is generated, enabling local data processing, analysis, and decision-making without continuous reliance on centralized cloud or data center infrastructure. We envision its future through the integration of Edge AI-enabled intelligent autonomous systems on software-defined platforms, digitally connected embedded systems, and integrated ecosystems.
+
+Key stages​
+Our 3-stage project selection process comprises a detailed evaluation of the project concept according to the evaluation criteria, plagiarism checks, and assessment by SMEs, leading to the selection of the top 3 winning teams.​​
+
+
+Stage 1 – Project registration
+Teams need to register by submitting their project application form. Once the application form passes a plagiarism check, a panel of experts will review all submissions and shortlist the promising projects.​
+
+
+Stage 2 – Virtual POC presentation
+The shortlisted teams will present a technical presentation and virtual Proof Of Concept / Prototype on their project to a panel of SMEs. The top teams from this pool will then advance to the final demo round.​
+
+
+Stage 3 – Final demo day
+The top shortlisted teams will demonstrate their Proof Of Concept / Prototype to our jury panel in a physical event followed by a Q&A session. The top teams will be identified as winners.​​

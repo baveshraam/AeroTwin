@@ -1,0 +1,933 @@
+================================================================================
+TATA INNOVENT-27  |  AI AT THE EDGE  |  PROBLEM STATEMENT (v2, deep)
+Project: AeroTwin-Edge
+Track:   3.2.3 Aerospace
+         3.2.3.4 Edge AI for Intelligent Inspection & Defect Detection (primary)
+         3.2.3.1 Edge AI for Digital Twin-Enabled MRO (fused)
+         touches 3.2.3.3 (predictive) and 3.2.3.5 (secure/software-defined)
+================================================================================
+
+CONTENTS
+  FA. FINALIZED FORM / APPLICATION ANSWERS (canonical, copy-paste, PPT-ready)
+  0.  One-line pitch
+  1.  Why aerospace MRO (vertical selection)
+  2.  The problem, in MRO's own language
+  3.  Defect taxonomy (what we actually detect)
+  4.  The lucrative reframe (tool -> platform)
+  5.  Depth stack / architecture (BUILD vs DECK-ONLY)
+  6.  Technical deep-dive (models, data, edge, MLOps, security)
+  7.  Digital twin & the ATA/SRM mapping
+  8.  Regulatory & certification posture (the credibility moat)
+  9.  Metrics that speak MRO (POD, not just mAP)
+  10. Business case, TAM, revenue & unit economics
+  11. Competitive landscape & moats
+  12. Go-to-market (Tata captive -> outward)
+  13. Roadmap (wedge -> platform)
+  14. Risks & honest mitigations
+  15. POC scope, hardware & the 3-minute demo
+  16. Verification plan
+  17. Fallback / alternate statements
+  18. Glossary
+
+
+================================================================================
+FA. FINALIZED FORM / APPLICATION ANSWERS  (canonical, copy-paste, PPT-ready)
+================================================================================
+These are the finalized submission answers. Style: formal, lowercase except
+terminology, no dashes, each within 4000 characters. Use these verbatim for the
+form and as source content for the PPT. (Sections 0-18 and the Annexes below are
+the deeper working notes behind these answers.)
+
+----------------------------------------------------------------------
+Q42. PROJECT TITLE
+----------------------------------------------------------------------
+AeroTwin-Edge: offline edge AI for intelligent aircraft inspection and defect
+detection, with digital twin health monitoring, predictive condition based
+maintenance and federated fleet learning
+
+----------------------------------------------------------------------
+Q43. PROJECT CATEGORY
+----------------------------------------------------------------------
+AI at the Edge Solutions for Aerospace
+
+----------------------------------------------------------------------
+Q44. PROJECT SUBCATEGORY (primary)
+----------------------------------------------------------------------
+Edge AI for Intelligent Inspection & Defect Detection
+(digital twin enabled MRO, predictive maintenance and secure software defined
+aerospace are addressed as depth layers within the solution)
+
+----------------------------------------------------------------------
+Q45. SPECIFIC REAL WORLD PROBLEM
+----------------------------------------------------------------------
+aircraft structural inspection remains a predominantly manual, visual and calendar
+driven discipline, which introduces three persistent weaknesses at the point of
+work. first, detection reliability is inconsistent. the probability of detection
+for fine cracks and early stage corrosion varies with inspector skill, experience
+and fatigue, and severity is assessed against SRM allowable limits visually, so the
+measurement that governs airworthiness is seldom repeatable. second, inspection
+outcomes are poorly retained. findings are recorded on paper task cards and
+disconnected systems, with no continuous condition history maintained for each tail
+number, which makes any reliable assessment of defect progression between checks
+difficult. third, the process is operationally reactive. inspection is performed
+under AOG conditions, where ground time is estimated at approximately rupees 8 lakh
+to 1.25 crore per hour, and a fixed interval check regime simultaneously over
+maintains healthy structure while failing to advance maintenance on rapidly
+progressing defects. conventional cloud based artificial intelligence cannot
+address this environment, because secure ITAR restricted hangars are frequently
+network isolated and inspection imagery cannot lawfully leave the site. the
+consequence is an inspection function that is subjective, weakly traceable and
+reactive within a safety critical and high cost industry. this is the specific
+problem the project addresses within the aerospace intelligent inspection and
+defect detection category.
+
+----------------------------------------------------------------------
+Q46. HOW THE PROJECT ADDRESSES THE PROBLEM AND THE VALUE IT CREATES
+----------------------------------------------------------------------
+the project delivers an offline, edge resident inspection and condition management
+capability that operates directly at the aircraft on a Raspberry Pi class device,
+performing three coordinated functions in a single inspection pass. first, it
+detects, segments and severity grades structural defects against SRM allowable
+limits, converting a subjective visual judgement into a consistent, millimetre
+accurate and repeatable measurement. second, it employs unsupervised anomaly
+detection in place of large labelled datasets, which is essential in an aerospace
+context where representative defect imagery is inherently scarce, and which enables
+the system to identify damage it was not explicitly trained to recognise. third,
+and most significantly, it records every finding within a persistent digital twin
+maintained for each individual tail number, associating the defect with its part
+and ATA zone, tracking its evolution across successive inspections, and forecasting
+the flight cycle at which it will exceed its allowable limit. an agentic assistant
+then retrieves the governing AMM and SRM provisions and prepares the corresponding
+work order, while final acceptance remains with the certifying engineer, ensuring
+accountability is preserved. the architecture is fully offline, compliant with ITAR
+site constraints, and underpinned by a tamper evident audit trail, which together
+make it deployable within an operational hangar rather than a controlled
+laboratory. the resulting value is a transition from reactive, calendar based
+inspection to predictive, condition based maintenance, supported by traceability of
+regulatory standard.
+
+----------------------------------------------------------------------
+Q47. TECHNOLOGIES AND FRAMEWORKS
+----------------------------------------------------------------------
+each technology was selected to satisfy a specific operational constraint rather
+than for novelty. because structural cracks are fine and small in scale, the
+pipeline applies SAHI tiling and uses YOLO for detection and segmentation to recover
+accurate defect geometry rather than coarse bounding regions. to address the
+scarcity of labelled defect data, a self supervised DINOv2 backbone provides robust
+feature representation, while PatchCore, PaDiM and EfficientAD perform unsupervised
+anomaly detection without dependence on large defect corpora. to operate within
+network isolated hangars, models are quantized to INT8 and optimised through pruning
+and distillation, then deployed via ONNX Runtime, TensorFlow Lite or NCNN on a
+Raspberry Pi 5, with an optional Hailo accelerator where additional throughput is
+required. dimensional accuracy is achieved using OpenCV with ArUco fiducial
+references, which translate segmentation geometry into calibrated millimetre
+measurements evaluated against a configurable SRM limit table. defect progression is
+estimated using a Paris law fatigue crack growth formulation. the agentic layer
+employs a local quantized LLM with retrieval augmented generation over a controlled
+AMM and SRM corpus, constrained by citation required guardrails to prevent
+unsupported determinations. federated learning is implemented using Flower with
+federated averaging, allowing model performance to improve across the fleet while
+raw imagery remains on site. the supporting stack comprises PyTorch for model
+development, FastAPI with a lightweight web interface for the digital twin, and a
+hash chained log for audit integrity. public datasets including NEU-DET, SDNET2018
+and GAPs, augmented with synthetic defects, are used for initial training prior to
+transfer to aircraft surfaces.
+
+----------------------------------------------------------------------
+Q48. AI CATEGORY
+----------------------------------------------------------------------
+Hybrid AI / Combination of multiple AI approaches
+
+----------------------------------------------------------------------
+Q49. KEY BENEFITS AND IMPACT (IN NUMBERS)
+----------------------------------------------------------------------
+the project delivers measurable operational, economic and safety benefits. aircraft
+on ground time is estimated at approximately rupees 8 lakh to 1.25 crore per hour,
+and a single avoided ground day represents savings in the region of rupees 2 crore,
+so the system can recover its cost on a single prevented event while operating on
+edge hardware costing approximately rupees 10,000 with no recurring cloud
+expenditure. the principal long term benefit derives from improved detection
+capability. reducing the smallest reliably detected defect from approximately 4mm to
+approximately 2mm, when applied within established damage tolerance analysis, can
+approximately double the safe interval between inspections, which an operator may
+realise either as reduced inspection cost or as increased safety margin. this
+enables a substantive transition from calendar based to condition based maintenance,
+reducing unnecessary structural teardowns, lowering the incidence of unscheduled
+groundings, and decreasing repeat inspections arising from inconsistent initial
+assessments. the capability also improves with scale, as each additional tail
+contributes to shared model performance through federated learning without
+incremental data cost. consistent with industry practice, detection performance is
+reported as probability of detection at the a90 95 level rather than as model
+accuracy, preserving credibility with regulators and certifying staff. the
+addressable opportunity is significant, with the Indian MRO market projected to grow
+from approximately 2 billion to 4 billion dollars by 2030 within a global MRO market
+exceeding 100 billion dollars, in which Tata and Air India hold a central position.
+
+----------------------------------------------------------------------
+Q50. CURRENT STATE OF PROJECT
+----------------------------------------------------------------------
+Prototype / Proof of Concept
+(supported by the L0 to L3 edge demonstration chain and the project progress plan;
+select Concept / Idea stage instead if the working Pi demo is not ready at the
+relevant judging round)
+
+----------------------------------------------------------------------
+Q51. INTELLECTUAL PROPERTY (IP) PROTECTION
+----------------------------------------------------------------------
+No (filing planned; provisional patent intended before public disclosure). the
+defensible novelty is the combination of POD aware inspection interval adjustment,
+federated structural learning with zero imagery egress, and manual grounded agentic
+work order generation with a learning assurance audit trail.
+
+----------------------------------------------------------------------
+Q. ORIGINAL CONCEPTUALIZATION, BENCHMARKING AND DIFFERENTIATION
+----------------------------------------------------------------------
+we confirm that AeroTwin-Edge was conceptualised entirely by our team from first
+principles, starting from the operational problem of inconsistent, poorly traced and
+reactive aircraft structural inspection, and that it is not a copy or replication of
+any existing product or technology. the system architecture, the integration of edge
+defect detection with a digital twin maintained for each tail, the damage tolerance
+based progression model, and the agentic work order generation were all designed by
+the team.
+
+as part of conceptualisation we carried out a benchmarking review of recent work by
+OEMs and startups in this domain. fleet and platform analytics providers such as
+Airbus Skywise, Lufthansa Technik AVIATAR and GE Aerospace concentrate primarily on
+systems health, reliability and engine data. these platforms are predominantly cloud
+based and oriented toward aggregated fleet analytics rather than structural
+inspection performed at the aircraft. in the visual inspection space, startups such
+as Donecle and Mainblades have demonstrated drone and robotic imaging of aircraft
+surfaces, which accelerates image capture but typically depends on cloud or server
+side processing, is centred on detection and reporting, and is not coupled to a
+condition twin for each tail or to predictive maintenance scheduling. engine
+borescope inspection tools within OEM ecosystems apply computer vision to internal
+imagery, but remain largely proprietary, cloud connected and confined to the engine
+domain. the recurring pattern across this landscape is cloud dependence, a focus on
+detection or analytics in isolation, and limited applicability inside secure, network
+isolated, ITAR restricted maintenance environments.
+
+our differentiation follows directly from that gap. first, AeroTwin-Edge executes
+entirely at the edge and fully offline on low cost hardware, which makes it
+deployable inside secure hangars where cloud solutions cannot operate. second, it
+relies on unsupervised anomaly detection rather than large labelled datasets, which
+addresses the structural scarcity of aerospace defect data that constrains
+supervised approaches. third, it does not treat inspection as an endpoint, but
+writes every finding into a persistent digital twin for each tail, tracks defect
+progression across successive checks, and predicts the flight cycle at which a defect
+will cross its SRM limit, enabling a shift from calendar based to condition based
+maintenance. fourth, an agentic assistant prepares manual cited work orders under
+citation required guardrails while the certifying engineer retains final authority,
+keeping the system within an approved maintenance and accountability framework.
+fifth, federated learning improves model performance across the fleet while raw
+imagery never leaves the site, and a tamper evident audit trail provides traceability
+of regulatory standard.
+
+no single existing solution combines edge native offline operation, ITAR compliant
+data handling, an integrated structural twin for each tail, damage tolerance based
+predictive scheduling, agentic manual grounded work order generation, and federated
+learning. it is this combination, rather than any individual component, that
+constitutes the novelty and the differentiation of the project.
+
+
+================================================================================
+0. ONE-LINE PITCH
+================================================================================
+A fleet of fully-offline edge inspectors that detect and severity-grade aircraft
+defects on a Raspberry Pi 5, each growing a living digital twin of one tail
+number that tracks defect progression, predicts when a defect crosses its
+structural-repair-manual limit, and drives the next maintenance action via an
+agentic MRO copilot -- improving across the fleet through federated learning,
+with zero raw imagery ever leaving the secure site.
+
+
+================================================================================
+1. WHY AEROSPACE MRO (vertical selection)
+================================================================================
+InnoVent is run by Tata Technologies, whose three service verticals ARE the three
+tracks (Automotive = JLR/Tata Motors; IHM = Tata Hitachi; Aerospace = Tata
+Advanced Systems / Tata Boeing). "Most profitable on their side" = highest-growth,
+highest-margin = Aerospace MRO.
+
+                  Automotive        IHM            Aerospace (CHOSEN)
+  Crowding        Brutal (ADAS)     Moderate       Low (looks intimidating)
+  Tata pull       Mature/saturated  Solid/narrow   Highest growth, high margin
+  Edge story      Often forced      Decent         Airtight (below)
+  Demoability     Needs car/sim     Camera, OK     Excellent (Pi 5 + webcam)
+
+Edge is not a gimmick here -- it is forced by the domain:
+  - Hangars / flight lines are RF-restricted, secure, often signal-dead.
+  - ITAR / EAR / data-sovereignty: defence + OEM imagery legally cannot hit
+    public cloud. On-prem/edge is the ONLY compliant path.
+  - AOG (Aircraft-on-Ground) economics: a verdict in seconds at the aircraft
+    beats an upload-analyse-download loop while the jet bleeds money.
+  - Data weight: 4K/high-res + borescope video is heavy; process at source.
+
+Tailwinds (put these on slide 1):
+  - India MRO ~$2B today -> ~$4B by ~2030; India targets becoming a regional MRO
+    hub; Tata is standing up Air India MRO + runs Tata-Boeing/Airbus C295.
+  - Global airframe+engine+component MRO is a ~$100B+ annual market.
+  - Regulators are actively pushing Condition-Based Maintenance (CBM+); EASA/FAA
+    have live AI-in-aviation roadmaps. We are with the regulatory current, not
+    against it.
+
+
+================================================================================
+2. THE PROBLEM, IN MRO'S OWN LANGUAGE
+================================================================================
+Structural inspection (GVI / DVI / borescope) is still largely manual, slow,
+subjective, paper-trailed, and CALENDAR/CYCLE-scheduled rather than condition-based.
+
+  - Detection is human + flashlight + mirror + borescope; outcomes vary by
+    technician fatigue and skill. Probability of Detection (POD) for small cracks
+    is inconsistent.
+  - Severity is judged against the SRM Allowable Damage Limits (ADL) by eye;
+    sizing (mm) is manual and repeatability is poor.
+  - Findings sit on task cards / siloed systems; there is no continuous per-TAIL
+    history, so "did this crack grow since the last C-check?" is genuinely hard.
+  - Inspection = cost center; the aircraft sits AOG ($10k-150k/hr) while
+    inspecting and deciding happen serially.
+  - Scheduling is interval-based (A/C/D checks). A specific defect approaching its
+    limit doesn't pull its own maintenance forward; a healthy structure still
+    eats a scheduled teardown. Both are waste.
+  - Cloud AI tools are a non-starter inside ITAR-restricted hangars, which is why
+    most "AI inspection" pilots stall at the security review.
+
+
+================================================================================
+3. DEFECT TAXONOMY (what we actually detect & grade)
+================================================================================
+Metallic structure / skin:
+  - Fatigue cracks (rivet rows, lap joints, fastener holes, stress risers)
+  - Corrosion: pitting, intergranular, exfoliation, filiform; stress-corrosion
+    cracking (SCC)
+  - Mechanical damage: dents, gouges, scratches, nicks
+  - Lightning-strike burn / arc damage; missing/sheared/proud fasteners
+  - Sealant degradation, paint/coating breakdown (corrosion precursor)
+
+Composite structure (growth area -- next-gen aircraft are composite-heavy):
+  - BVID (Barely Visible Impact Damage), delamination, disbonds, fiber breakage
+  - This is where competitors are weakest and value is highest.
+
+Engine (borescope, ATA 72/70s -- highest $ per finding):
+  - Blade tip curl/rub, nicks, dents, cracks, coating loss, burn-through,
+    domestic/foreign object damage (DOD/FOD), combustor distress.
+
+Environment:
+  - FOD on flight line / hangar floor (runway-incursion & engine-ingestion risk).
+
+Each class maps to a different ALLOWABLE LIMIT and a different referenced manual
+section -- which is exactly what makes "severity grading + manual mapping" the
+aerospace-literate move instead of a generic object detector.
+
+
+================================================================================
+4. THE LUCRATIVE REFRAME (tool -> platform)
+================================================================================
+A-alone ("faster, cheaper inspection") = cost center, linear value, one-off sale.
+
+AeroTwin-Edge (A+C fused) = Condition-Based Structural Health Management at the
+edge. It shifts MRO from scheduled/reactive to predictive/condition-based across a
+fleet, and turns a tool into a PLATFORM:
+  - Recurring SaaS instead of a one-time sale.
+  - Data network-effect moat (more tails -> better models, via federation).
+  - The twin becomes the structural system-of-record (switching cost).
+  - Rides the CBM+ regulatory tailwind instead of fighting it.
+
+Said plainly: we don't sell "an AI that spots cracks." We sell "the system that
+decides, per tail, what to fix and when -- and proves it to the regulator."
+
+
+================================================================================
+5. DEPTH STACK / ARCHITECTURE -- BUILD vs DECK-ONLY
+================================================================================
+Architect all layers in the deck; DEMO ONE complete vertical slice. Do NOT build
+L4-L6 for the POC -- a narrow flawless chain beats a broad broken one.
+
+  L0  Edge DETECT + SEGMENT + SEVERITY GRADE                     [BUILD - core]
+      Pi 5, offline, on-device latency on screen.
+
+  L1  Per-tail DIGITAL TWIN                                       [BUILD]
+      Persist findings; pin to ATA zone / station / stringer / frame; history.
+
+  L2  Defect PROGRESSION -> predictive scheduling                [BUILD-lite]
+      Crack-growth fit (Paris' law da/dN = C*(dK)^m flavored) -> predict the
+      cycle/date a defect crosses its SRM limit -> recommend the inspection
+      interval / pull-forward. THE cost->predictive value jump.
+
+  L3  Agentic MRO COPILOT                                         [BUILD-lite]
+      RAG over AMM/SRM/MEL excerpts -> drafts a task card / work order, cites the
+      manual section, answers "dispatchable per MEL/CDL?". Human signs. Hits the
+      GenAI + Agentic theme judges reward.
+
+  L4  Fleet brain + FEDERATED LEARNING                           [DECK ONLY]
+      FedAvg/FedProx + secure aggregation + differential privacy. Models improve
+      across tails/sites; raw imagery never leaves a site. The moat + the recurring
+      revenue engine + the data-sovereignty narrative in one move.
+
+  L5  Closed-loop MRO OPS                                         [DECK ONLY]
+      Predicted limit-crossing auto-triggers parts pre-positioning, hangar-slot
+      booking, certifying-staff dispatch. This is where AOG-cost money is captured.
+
+  L6  AR overlay / MULTIMODAL                                    [OPTIONAL FLAIR]
+      Tablet AR overlay on the real airframe; fuse structural + systems (vibration/
+      EGT) health into one tail twin.
+
+Cross-cutting (still BUILD -- they ARE the core differentiators):
+  - UNSUPERVISED ANOMALY DETECTION (PatchCore / PaDiM / EfficientAD) trained on
+    NORMAL surfaces -> flags unknown defects WITHOUT thousands of labelled defect
+    images. This is the direct answer to "you have no aerospace defect data."
+  - UNCERTAINTY + ESCALATION (MC-dropout / conformal prediction): the system says
+    "low confidence -> escalate to human." Safety-critical and a trust selling
+    point; also feeds active learning.
+  - HASH-CHAINED SIGNED REPORT = immutable, tamper-evident audit trail. Every
+    airworthiness-relevant call is logged. A real moat in a regulated industry.
+
+
+================================================================================
+6. TECHNICAL DEEP-DIVE
+================================================================================
+6.1 Detection / segmentation
+  - Cracks are thin, tiny, high-aspect-ratio -> naive YOLO misses them. Use
+    high-res tiling / slicing-aided inference (SAHI) and an anchor-free
+    small-object detector; segmentation head for pixel-accurate sizing.
+  - Backbone via SELF-SUPERVISED pretraining (e.g. DINOv2 features) frozen +
+    lightweight trainable head -> strong with few labels (data-scarcity answer).
+
+6.2 Anomaly path (the "unknown unknowns")
+  - PatchCore/PaDiM/EfficientAD on normal-surface patches; flags anything that
+    doesn't look like healthy structure even if never labelled. EfficientAD is
+    edge-friendly.
+
+6.3 Severity / sizing (turn pixels into airworthiness)
+  - Calibrate scale with an ArUco/checkerboard fiducial (or known rivet pitch) ->
+    convert mask length/area to millimetres; compare against a configurable
+    SRM Allowable-Damage-Limit table -> minor / major / critical / beyond-limit.
+  - Report measurement uncertainty (gauge R&R mindset), not a bare number.
+
+6.4 Data strategy (this is what makes or breaks credibility)
+  - Bootstrap: NEU-DET (metal surface defects), SDNET2018 (cracks), GAPs, plus
+    corrosion/aircraft-crack images from literature -> transfer to aircraft skin.
+  - SYNTHETIC: physics-based / procedural crack & corrosion rendering, Blender-
+    rendered panels + domain randomisation, and diffusion-generated defects to
+    balance rare classes. Domain adaptation to close the sim-to-real gap.
+  - HUMAN-IN-THE-LOOP active learning: low-confidence cases get technician labels,
+    which feed the next (federated) model round.
+
+6.5 Edge execution (Raspberry Pi 5 8GB)
+  - Quantize: INT8 PTQ (and QAT if accuracy drops), prune, knowledge-distill a
+    small student. Export to NCNN / TFLite / ONNX-Runtime.
+  - The Pi 5 has no built-in NPU. Two honest options for the demo:
+      (a) CPU-only quantized model -> show real (modest) FPS; emphasise "offline,
+          minimum resource" -- which IS the edge-AI thesis.
+      (b) Add the Raspberry Pi AI Kit (Hailo-8L, ~13 TOPS, M.2) or a Coral USB ->
+          show strong FPS. State which you used; don't fake numbers.
+  - Display on-device latency / FPS / power on screen during the demo.
+
+6.6 Edge MLOps (the "fleet" credibility)
+  - Signed model artifacts, OTA model push to the fleet of edge nodes, versioned
+    model registry, A/B + rollback, on-device drift monitoring. This is why it's a
+    "software-defined" system (3.2.3.5), not a one-off script.
+
+6.7 Security (3.2.3.5 / secure MRO)
+  - Pi secure boot, encrypted twin store, the hash-chained tamper-evident log,
+    signed models (supply-chain integrity), no inbound network in the hangar.
+  - Federation with secure aggregation + differential privacy so even gradients
+    don't leak ITAR imagery. Security is a FEATURE here, not overhead.
+
+
+================================================================================
+7. DIGITAL TWIN & THE ATA / SRM MAPPING
+================================================================================
+The twin is not a 3D toy -- it's a structured per-tail record:
+  - GEOMETRY: airframe zones by ATA 100 / iSpec 2200 chapters (ATA 51 standard
+    practices/structures, 52 doors, 53 fuselage, 54 nacelle/pylon, 55 stab, 57
+    wing; 70s powerplant). Each finding pinned to zone + station + stringer/frame.
+  - MATERIAL & LIMITS: the SRM Allowable Damage Limits per location/material.
+  - HISTORY: every scan, sized, dated, by whom/which model version.
+  - LOAD/USAGE: flight cycles & hours -> feeds the progression model (L2).
+  - OUTPUT: airworthiness state + recommended task card, mapped to AMM/SRM section.
+Mapping detections to this structure is the "multiple layers deep" that separates
+a product from a demo, and it's exactly what Tata Technologies' PLM/digital-twin
+business already sells.
+
+
+================================================================================
+8. REGULATORY & CERTIFICATION POSTURE (credibility moat)
+================================================================================
+Show the judges you know the rules AI-in-aviation must live inside:
+  - Work happens inside a Part 145 approved maintenance org; only CERTIFYING STAFF
+    sign off. Our agent DRAFTS and RECOMMENDS; a human accepts. Accountability
+    stays with the human -> certifiable path, not a moonshot.
+  - Frame the AI as DECISION SUPPORT / augmentation (EASA "Level 1/2" assistance),
+    not autonomous airworthiness determination.
+  - Name the live standards: EASA AI Roadmap + Concept Paper on ML "learning
+    assurance"; FAA AI guidance; SAE G-34 / EUROCAE WG-114 (AS6983) for ML in
+    aeronautics; DO-178C for the surrounding software. DGCA (India) is the relevant
+    authority for Air India / Indian MROs.
+  - The hash-chained audit trail + model versioning is precisely the evidence
+    "learning assurance" regimes demand. We're building for the audit from day one.
+This posture is itself a moat: incumbents' cloud tools struggle with the
+data-sovereignty + traceability bar that we meet by design.
+
+
+================================================================================
+9. METRICS THAT SPEAK MRO (POD, not just mAP)
+================================================================================
+ML metrics get you in the door; aerospace metrics win the room:
+  - PROBABILITY OF DETECTION (POD) curves; report a90/95 (crack size detected 90%
+    of the time at 95% confidence) -- the NDT industry's own language.
+  - High RECALL bias (a missed crack is safety-critical) with conformal guarantees;
+    quantify the false-negative escalation rate.
+  - Sizing error (mm) + repeatability (gauge R&R), not just IoU.
+  - Edge: on-device FPS, latency, model size, power draw on the Pi.
+  - Business KPIs: inspection man-hours saved, inspection-cycle-time reduction %,
+    AOG hours avoided, schedule adherence, scheduled->CBM+ conversion.
+
+
+================================================================================
+10. BUSINESS CASE, TAM & UNIT ECONOMICS
+================================================================================
+Market:
+  - Global MRO ~$100B+/yr (airframe + engine + component + line). Inspection labour
+    is a large, repetitive slice ripe for augmentation.
+  - India MRO ~$2B -> ~$4B (~2030); Tata/Air India is a built-in beachhead.
+
+Revenue model (land-and-expand, multiple lines):
+  - SaaS: per-tail-number / year (the twin subscription).
+  - Fleet-analytics tier: cross-fleet trends, reliability, CBM+ planning.
+  - Per-scan / metered inspection.
+  - Edge-device-as-a-service: lease the hardened Pi/Hailo node.
+  - OUTCOME-BASED pricing: a % of AOG-hours-avoided / man-hours-saved -- sticky,
+    high-margin, aligns us to customer value.
+  - Professional services / integration into existing M&E systems (AMOS, TRAX).
+  - Data/benchmarking products & a repair-scheme marketplace (later).
+
+Unit economics (the punch line):
+  - A single avoided AOG DAY can be worth $250k+ on a narrow-body. Selling our
+    full stack for a fraction of one avoided AOG event = obvious ROI. We price to
+    value, not to cost.
+
+LTV is high (twin = system-of-record, multi-year), CAC is contained via the Tata
+captive beachhead. Federation makes the product better as the install base grows.
+
+
+================================================================================
+11. COMPETITIVE LANDSCAPE & MOATS
+================================================================================
+Incumbents / adjacents:
+  - Platform analytics: Lufthansa Technik AVIATAR, Airbus Skywise, GE Aerospace,
+    Boeing -- mostly CLOUD, fleet-data, systems-health; weaker on edge structural
+    visual + ITAR-bounded sites.
+  - Drone/robotic visual inspection: Mainblades, Donecle, Aerobotics-style -- strong
+    imaging, but cloud-processed, not twin-integrated, not agentic, not federated.
+  - Most "AI inspection" pilots die at the security/data-sovereignty review.
+
+Our moats (defensible, stacked):
+  1. EDGE + offline + ITAR-safe by design (we pass the review they fail).
+  2. FEDERATED data network effect: more tails -> better models, no data leaves.
+  3. TWIN as structural system-of-record -> switching cost.
+  4. Regulatory AUDIT TRAIL / learning-assurance evidence baked in.
+  5. AGENTIC manual-grounded workflow integrated into Part 145 sign-off.
+No single competitor combines edge + twin + federation + agent + certifiability.
+
+
+================================================================================
+12. GO-TO-MARKET (Tata captive -> outward)
+================================================================================
+  Phase 1  Tata captive beachhead: Air India fleet / AIESL, Tata-Boeing/Airbus
+           C295 line. Friendly data, real tails, regulatory cover, reference logo.
+  Phase 2  Indian third-party MROs (the $4B hub build-out) + DGCA alignment.
+  Phase 3  Gulf / SE-Asia MRO hubs; OEM & lessor partnerships (lessors care about
+           asset-condition records at redelivery -> the twin is gold at lease return).
+  Phase 4  Engine-shop borescope (highest $/finding) and composite BVID (next-gen
+           fleets) as premium expansions.
+
+
+================================================================================
+13. ROADMAP (wedge -> platform)
+================================================================================
+  Now (POC):   metallic skin crack/corrosion, single tail, offline edge chain.
+  6-12 mo:     more defect classes, borescope module, twin integration w/ M&E sys.
+  12-24 mo:    federated fleet learning live; CBM+ predictive scheduling in ops.
+  24 mo+:      composites/BVID, engine prognostics fusion, lease-return condition
+               product, marketplace. Airframe -> engine -> systems -> fleet ops.
+
+
+================================================================================
+14. RISKS & HONEST MITIGATIONS
+================================================================================
+  - Data scarcity            -> anomaly detection + synthetic + transfer + active
+                                learning + federation (designed-in, not bolted on).
+  - Safety / false negatives -> high-recall bias, conformal uncertainty, human-in-
+                                the-loop escalation, certifying-staff sign-off.
+  - Certification risk        -> decision-support framing, audit trail, named
+                                standards (EASA ML, SAE G-34) -- build for the audit.
+  - Generalisation (lighting, -> domain randomisation, calibration fiducials,
+    surfaces, types)             federated adaptation per site/type.
+  - Pi compute ceiling        -> quantize/distill; optional Hailo-8L AI Kit; honest
+                                FPS numbers; "minimum resource" is the thesis anyway.
+  - Adoption / change mgmt     -> augment the technician, don't replace; integrate
+                                into existing task-card workflow.
+
+
+================================================================================
+15. POC SCOPE, HARDWARE & THE 3-MINUTE DEMO
+================================================================================
+Hardware: 3 high-end laptops (train + dashboard) + 1 Raspberry Pi 5 8GB (edge
+node) + Pi/USB camera (+ optional Hailo-8L AI Kit). Minimum resources -- which is
+the point of an edge-AI hackathon.
+
+Build (only L0-L3, narrow):
+  1. Data: public defect sets -> transfer; a few synthetic defects to balance.
+  2. Models: small quantized detector+seg (INT8 ONNX/NCNN) on the Pi; PatchCore/
+     EfficientAD anomaly path; fiducial-based mm sizing vs an SRM-limit table.
+  3. Edge runtime: Pi 5, offline (airplane mode), latency/FPS on screen.
+  4. Twin+progression+agent: per-tail store; growth fit across 2+ scans -> limit-
+     crossing prediction; tiny local LLM does RAG over an AMM/SRM excerpt to draft
+     a signed work order. Keep everything tiny.
+
+THE UNBROKEN 3-MINUTE CHAIN (one tail, one defect, all offline on the Pi):
+   crack on a metal panel
+     -> DETECT + GRADE         ("ATA 53, stringer 14, crack 8.0 mm")
+     -> TWIN                    ("tail VT-XYZ, was 6.0 mm last scan, +2 mm")
+     -> PROGRESSION            ("crosses 12 mm SRM limit in ~40 cycles")
+     -> AGENT                  drafts signed work order citing SRM 53-xx, asks
+                                certifying staff to accept
+   Pi in airplane mode; latency on screen.
+Open with 60 sec: "why edge, why CBM+, why this is Tata-MRO P&L."
+Induced-defect panel: scored cracks, salt-spray corrosion patch, a dent, a loose
+bolt as FOD.
+
+
+================================================================================
+16. VERIFICATION PLAN
+================================================================================
+  - Run the quantized model on the Pi 5 against a held-out test folder; record
+    precision/recall (and a POD/a90-95 estimate if data allows) + measured
+    on-device FPS/latency/power. Put the numbers in the deck.
+  - Live test: induced-defect panel, Pi on airplane mode, end-to-end to a signed
+    report in < ~5 s. TEST OFFLINE FIRST -- if it fails offline, the edge story
+    fails.
+  - Sizing sanity: compare the model's mm against a hand-measured defect; confirm
+    the fiducial scale and repeatability.
+  - Progression sanity: feed two synthetic "scans" of a growing crack; confirm the
+    predicted limit-crossing cycle is monotonic and sane.
+
+
+================================================================================
+17. FALLBACK / ALTERNATE STATEMENTS (back pocket -- do NOT build now)
+================================================================================
+  - Pick B -- Predictive Maintenance / RUL (3.2.3.3): RUL on NASA C-MAPSS with
+    per-tail drift adaptation + tinyML. Highest raw commercial value, strongest
+    data story, less visually flashy. Use if the team skews time-series/embedded.
+  - Pick C-pure -- Digital-Twin-Enabled MRO (3.2.3.1): already fused above; the
+    standalone full-twin version is larger scope than a POC needs.
+
+
+================================================================================
+18. GLOSSARY
+================================================================================
+  ADL    Allowable Damage Limits (defined in the SRM)
+  AMM    Aircraft Maintenance Manual
+  AOG    Aircraft-on-Ground (grounded, revenue-losing)
+  ATA    Air Transport Association chapter system (iSpec 2200) for zones/systems
+  BVID   Barely Visible Impact Damage (composites)
+  CBM+   Condition-Based Maintenance Plus
+  CDL    Configuration Deviation List
+  DVI/GVI Detailed / General Visual Inspection
+  FOD    Foreign Object Debris/Damage
+  MEL    Minimum Equipment List (dispatchability)
+  MRO    Maintenance, Repair & Overhaul
+  NDT    Non-Destructive Testing (eddy current, ultrasonic, thermography...)
+  POD    Probability of Detection (a90/95 = size found 90% of time, 95% conf.)
+  Part 145 EASA-approved maintenance organisation framework
+  RUL    Remaining Useful Life
+  SCC    Stress-Corrosion Cracking
+  SRM    Structural Repair Manual
+  Paris' law  da/dN = C*(deltaK)^m  -- fatigue crack-growth rate model
+================================================================================
+
+
+################################################################################
+#  ANNEXES -- DEEPER (v3). Everything below is DECK / vision depth. The POC      #
+#  build scope is still ONLY L0-L3 from section 15. Numbers marked ILLUSTRATIVE  #
+#  are assumptions to validate before a slide, not established facts.            #
+################################################################################
+
+
+================================================================================
+ANNEX A -- WHY NOW (the convergence slide)
+================================================================================
+Four curves cross in 2026-27, which is why this is buildable now and wasn't 3 yrs ago:
+  1. EDGE SILICON got cheap & capable: Raspberry Pi 5 + Hailo-8L AI Kit (~13 TOPS,
+     ~$70) puts data-centre-class inference in a hangar for the price of a tool.
+  2. FOUNDATION MODELS made few-shot real: self-supervised backbones (DINOv2) +
+     unsupervised anomaly detection break the "we have no labelled defect data" wall.
+  3. REGULATORS opened the door: CBM+ mandates + EASA/FAA AI "learning assurance"
+     roadmaps mean AI inspection now has a certification path, not just a demo.
+  4. INDIA MRO is being built right now: $2B->$4B, Air India fleet renewal, Tata
+     stand-up of MRO + C295 line. A greenfield install base with no legacy lock-in.
+"Same idea in 2022 = cloud-bound, unlabelled, uncertifiable, no customer." Now all
+four are solved at once. That's the why-now.
+
+
+================================================================================
+ANNEX B -- DAY IN THE LIFE (the user story for the pitch)
+================================================================================
+0300, an A320 lands AOG at an outstation: pilot wrote up a suspected lightning
+strike. Today: wait for a roving inspector, manual borescope+flashlight, phone the
+engineering desk, hours lost, jet grounded at $X0k/hr.
+
+With AeroTwin-Edge:
+  - Line tech walks up with the Pi node + camera. No signal needed; it's offline.
+  - Scans the strike zone. In seconds: "ATA 53 panel, arc burn + 8 mm crack,
+    BEYOND SRM allowable -> not dispatchable."
+  - The twin shows this tail's history; progression says it was sub-limit last
+    A-check, grew fast -> flag.
+  - The agent drafts the task card, cites SRM 53-xx repair scheme + MEL status,
+    pre-fills the defect report; the certifying engineer reviews and signs on a
+    tablet.
+  - Hash-chained, audit-ready. The fleet brain (later, federated) learns this
+    strike pattern for every other tail -- without the image ever leaving the site.
+Grounded-to-decision collapses from hours to minutes. THAT is the AOG money.
+
+
+================================================================================
+ANNEX C -- DAMAGE-TOLERANCE MATH (why better detection = real money)
+================================================================================
+Inspection intervals aren't arbitrary -- they come from Damage Tolerance Analysis.
+Principle: a crack must be DETECTED at least twice before it reaches critical size,
+so the repeat interval = (life from detectable size a_d to critical a_c) / safety
+factor (commonly 2-3).
+
+Crack growth (Paris' law):  da/dN = C*(deltaK)^m,  deltaK = deltaSigma * Y * sqrt(pi*a)
+Integrate from a_d to a_c to get N (cycles of safe life in that band).
+
+ILLUSTRATIVE worked example (numbers for intuition, not a real airframe):
+  a_d (manual detectable)   = 4.0 mm
+  a_d (edge-AI detectable)  = 2.0 mm   <-- better POD finds smaller cracks
+  a_c (critical / limit)    = 12.0 mm
+  Suppose integration gives:  4.0 -> 12.0 mm  = ~600 cycles
+                               2.0 -> 12.0 mm  = ~1,100 cycles
+THE LEVER: lowering detectable size from 4 -> 2 mm nearly DOUBLES the safe-life
+band. Operator's choice of how to spend it:
+  (a) Longer interval (fewer inspections -> direct $ saving), OR
+  (b) Same interval, far larger safety margin (fewer surprise AOG findings).
+Either way, DETECTION CAPABILITY (POD) converts directly into schedule + safety
+value via DTA. This is the quantitative spine of the whole pitch: we don't just
+"find cracks," we move a_d down, and DTA turns that into money and safety.
+
+
+================================================================================
+ANNEX D -- AGENTIC MRO COPILOT (architecture, tools, guardrails)
+================================================================================
+A small LOCAL LLM (e.g. quantized Phi / Llama-3.x-mini / Qwen-mini) running on the
+laptop (or Pi for the flex), driving a ReAct-style loop over a fixed tool set.
+NOT autonomous airworthiness -- decision SUPPORT that a human accepts.
+
+Tools the agent may call:
+  query_twin(tail, zone)            -> current + historical findings
+  lookup_manual(defect, location)   -> RAG over AMM/SRM/IPC -> ADL + repair scheme
+  check_mel(system)                 -> dispatchable? deferral category/time
+  compute_progression(defect_id)    -> cycles-to-limit (Annex C model)
+  draft_taskcard(...)               -> structured work order
+  request_signoff(...)              -> routes to certifying staff (human gate)
+
+GUARDRAILS (these are the safety story -- judges will probe hallucination):
+  - CITATION-REQUIRED: every airworthiness claim must cite a manual data module;
+    if lookup_manual returns nothing, the agent REFUSES and escalates -- it never
+    free-generates a limit.
+  - HUMAN GATE: agent drafts/recommends; only certifying staff sign. No autonomous
+    release-to-service.
+  - CONFIDENCE GATE: low detector/agent confidence -> "insufficient evidence,
+    escalate," never a guess.
+  - SCOPED CORPUS: RAG corpus is the controlled manual set only; out-of-corpus
+    questions are declined.
+  - FULL AUDIT: every tool call + prompt + output is hash-chain logged (Annex F).
+This is exactly the "Level 1/2 assistance + human oversight" posture EASA's ML
+guidance expects -> certifiable, demoable, and safe-by-construction.
+
+
+================================================================================
+ANNEX E -- FEDERATED LEARNING PROTOCOL (the moat, in detail)
+================================================================================
+Goal: the fleet model improves from every tail/site WITHOUT raw ITAR imagery ever
+leaving a site. Model weights travel; data never does.
+
+  - Topology: each MRO site / edge cluster is a federation client; a Tata-hosted
+    aggregator coordinates rounds (FedAvg / FedProx for non-IID across aircraft
+    types & lighting).
+  - SECURE AGGREGATION: clients send additively-masked updates; the server can only
+    compute the SUM, never an individual site's update -> no gradient leakage.
+  - DIFFERENTIAL PRIVACY: bounded noise (epsilon budget) on updates so even the
+    aggregate can't be inverted back to source imagery.
+  - BYZANTINE ROBUSTNESS: trimmed-mean / Krum aggregation + client reputation to
+    resist a poisoned or faulty client skewing the global model.
+  - SIGNED ARTIFACTS + OTA: the new global model is signed, version-pinned, pushed
+    to the fleet with A/B + rollback (the Annex H MLOps spine).
+Why it's a moat: value compounds with install base (network effect), and it is the
+ONLY architecture that is simultaneously fleet-learning AND ITAR-compliant. Cloud
+competitors structurally cannot match both at once.
+
+
+================================================================================
+ANNEX F -- CYBERSECURITY THREAT MODEL (also wins track 3.2.3.5 / 3.2.3.2)
+================================================================================
+Security here is a FEATURE, not overhead. Threats + mitigations:
+
+  T1 Adversarial EVASION: a sticker/paint/patch that hides a crack from the
+     detector (safety-critical false negative).
+     -> anomaly path flags "this looks wrong" even off-distribution; adversarial
+        training; ensemble; mandatory human spot-check on critical zones.
+  T2 Model POISONING via federation (Annex E): malicious client corrupts global.
+     -> Byzantine-robust aggregation, update anomaly screening, client reputation.
+  T3 Finding TAMPERING: someone edits a report to pass an unairworthy jet.
+     -> append-only HASH-CHAIN, signed entries -> the audit trail is a security
+        control, not just paperwork. Any edit breaks the chain.
+  T4 Device CAPTURE / IP theft: edge node stolen.
+     -> encrypted twin store, secure boot, weights in a TEE / encrypted at rest.
+  T5 SUPPLY-CHAIN: poisoned model artifact or dependency.
+     -> signed model artifacts, SBOM, reproducible builds, verify-on-load.
+  T6 SPOOFED TAIL / wrong-aircraft data: findings attached to the wrong twin.
+     -> cryptographic tail binding (QR/RFID + signed manifest) at scan start.
+This is a clean, defensible answer to "is your AI safe and secure?" -- and it
+quietly also satisfies the secure/software-defined aerospace track.
+
+
+================================================================================
+ANNEX G -- POD / STATISTICAL VALIDATION (certification-grade rigour)
+================================================================================
+To be accepted as an inspection method (or augmentation), you don't quote mAP --
+you produce a PROBABILITY OF DETECTION curve, per MIL-HDBK-1823A.
+  - Build a representative flaw set (known crack sizes across the operating range).
+  - Fit hit/miss (or a-hat-vs-a signal-response) model -> POD(a) curve.
+  - Report a90/95: the flaw size found 90% of the time at 95% confidence.
+  - Compare AI-a90/95 vs human-a90/95 to PROVE capability uplift (-> Annex C value).
+Honest scope: full POD qualification needs hundreds of samples and is beyond a
+hackathon. SHOW: (1) the methodology, (2) a preliminary POD curve on your test set,
+(3) the path to formal qualification. That maturity is what separates you from the
+"we got 0.92 mAP" teams.
+
+
+================================================================================
+ANNEX H -- EDGE BENCHMARK TARGETS (ILLUSTRATIVE -- measure & replace)
+================================================================================
+Put REAL measured numbers here on demo day; these are planning targets only.
+
+  Component            Model            Size   Pi5 CPU    Pi5 + Hailo-8L
+  -------------------  ---------------  -----  ---------  --------------
+  Detect+seg (INT8)    YOLO-n seg       ~6 MB  ~5-10 FPS  ~30-60 FPS
+  Anomaly              EfficientAD-S    ~8 MB  ~8-15 FPS  higher
+  Sizing               classical CV     n/a    realtime   realtime
+  Agent (RAG)          mini-LLM 4-bit   ~2-4GB laptop     laptop/edge box
+Targets: end-to-end scan->verdict < 5 s offline; detector recall biased high;
+power within a battery pack. Note the Pi 5 has NO built-in NPU -- be explicit about
+whether a result is CPU-only or Hailo-accelerated. Never fake a number.
+
+
+================================================================================
+ANNEX I -- STANDARDS & SYSTEM INTEGRATION (sell to real MROs)
+================================================================================
+Don't be an island -- speak the data standards MROs already run on:
+  - ATA iSpec 2200 / S1000D: technical pubs & data modules (AMM/SRM/IPC). Output
+    task cards as S1000D-friendly structured data, not PDFs.
+  - ATA Spec 2000: e-business / provisioning / reliability data exchange.
+  - M&E SYSTEMS to integrate with via API: AMOS (Swiss-AS), TRAX, and Ramco
+    Aviation (Indian-built -> natural Tata/Air India fit). The twin pushes findings
+    + predicted tasks INTO these systems of record rather than replacing them.
+Interoperability = lower adoption friction = faster, stickier sales.
+
+
+================================================================================
+ANNEX J -- ILLUSTRATIVE FINANCIAL MODEL (assumptions, validate before slide)
+================================================================================
+*** All figures ILLUSTRATIVE -- a framework to plug real numbers into. ***
+
+Customer ROI (per line/site, year 1):
+  Cost:   edge node + AeroTwin SaaS + integration  ~ $50-80k / yr
+  Saves:  - inspection man-hours (faster GVI/DVI, fewer re-inspections)
+          - 1 avoided AOG day on a narrow-body  ~ $250k+ (one event pays for years)
+          - fewer unnecessary scheduled teardowns (CBM+ vs calendar)
+  => payback measured in weeks, not years. Price to value, not to cost.
+
+Vendor revenue ramp (land Tata captive -> expand):
+  Pricing anchor: ~$20-30k / tail-number / yr (twin SaaS) + fleet tier + outcome %.
+       Yr1   100 tails (Air India captive)        ~$2.5M ARR
+       Yr2   350 tails (+ AIESL / Indian MROs)    ~$8-9M ARR
+       Yr3   800 tails (+ Gulf/SE-Asia hubs)      ~$20M ARR
+       Yr5   1,500+ tails + engine/composite tiers ~$40M+ ARR
+  Gross margin SaaS-like (70-85%); LTV high (twin = system-of-record, multi-yr);
+  CAC contained by the Tata beachhead; product improves with scale (federation).
+Outcome-based pricing (a % of AOG-hours-avoided) is the most lucrative + stickiest
+line -- it makes you a partner in the customer's P&L, not a vendor.
+
+
+================================================================================
+ANNEX K -- SUSTAINABILITY / ESG (also touches track 3.2.3.6)
+================================================================================
+Ties straight to InnoVent's "Engineering a Better World" theme:
+  - Longer part life via condition-based repair -> less scrap, less embodied carbon
+    in replacement parts.
+  - Fewer AOG ferry/positioning flights (fix in place, faster) -> fuel/CO2 saved.
+  - Aerodynamic cleanliness: timely dent/surface repair -> less drag -> less fuel.
+  - Digital task cards -> paperless line maintenance.
+  - Fewer unnecessary teardowns -> material + energy avoided.
+A credible, quantifiable ESG angle that most pure-tech entries won't have.
+
+
+================================================================================
+ANNEX L -- IP / NOVELTY (what's defensible)
+================================================================================
+The novelty isn't any single model -- it's the COMBINATION, which is hard to copy
+and potentially patentable as method claims:
+  - POD-aware inspection-interval adjustment: closing the loop from edge detection
+    capability (a_d) -> DTA -> dynamic CBM+ schedule per tail.
+  - Federated structural-anomaly learning with ZERO imagery egress (ITAR-safe).
+  - Manual-grounded, citation-required agentic task-card generation with a built-in
+    learning-assurance audit trail.
+Stack these and "just rebuild it" stops being easy.
+
+
+================================================================================
+ANNEX M -- HACKATHON EXECUTION PLAN (map to the 3 stages)
+================================================================================
+Stage 1 (registration + plagiarism + expert shortlist):
+  Deliver THIS document as the application: sharp problem, novel architecture,
+  clear edge thesis. Keep it original (plagiarism check) -- it already is.
+Stage 2 (virtual POC / prototype to SMEs):
+  Ship the L0-L3 chain on the Pi; record a clean run AND present live; deck = the
+  annexes distilled. Pre-empt POD / certification / data questions.
+Stage 3 (physical final demo + Q&A):
+  Induced-defect panel, Pi airplane-mode, the unbroken 3-min chain; Q&A drilled.
+
+Team roles (mixed team, ~4-6):
+  - ML/CV lead: detector + anomaly + sizing.
+  - Edge/embedded: Pi runtime, quantization, latency, (optional Hailo).
+  - Backend: twin store + progression model + agent tools.
+  - Domain/regulatory + deck: SRM/ATA mapping, POD story, business model, slides.
+  - PM/demo owner: the panel, the script, the contingency.
+
+Demo contingency (lazy-senior rule): record a PERFECT run as backup video; carry a
+spare flashed SD card; test the WHOLE chain offline the night before. If anything
+needs the network, it will fail on stage -- prove offline first.
+
+
+================================================================================
+ANNEX N -- SLIDE-BY-SLIDE PITCH OUTLINE (~12-14 slides)
+================================================================================
+  1.  Title + one-line pitch + the AOG cost hook
+  2.  Why now (Annex A convergence)
+  3.  The problem in MRO's language (manual, scheduled, cloud-blocked)
+  4.  The insight: CBM+ structural health AT THE EDGE
+  5.  Solution architecture (the 7-layer stack, BUILD vs vision)
+  6.  *** LIVE DEMO *** the unbroken 3-min chain
+  7.  Tech depth: anomaly (no-data answer) + POD + edge numbers
+  8.  Digital twin + ATA/SRM mapping (the product, not a detector)
+  9.  Damage-tolerance lever: better POD -> money (Annex C)
+  10. Regulatory posture + security (certifiable, ITAR-safe, audit trail)
+  11. Business: TAM, pricing, outcome-based, unit economics
+  12. Moats + competition (edge+twin+federation+agent+certifiable)
+  13. Roadmap + GTM (Tata captive -> region -> engine/composite)
+  14. Sustainability + team + the ask
+Lead with money + edge thesis; let the live chain carry the middle; close on moat.
+================================================================================
