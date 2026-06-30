@@ -1,0 +1,17 @@
+# --- Core perception (L0) ---
+numpy>=1.26
+opencv-contrib-python>=4.9      # 'contrib' build = ArUco markers for mm sizing
+ultralytics>=8.2               # YOLOv8 detection + segmentation
+onnxruntime>=1.17              # edge inference runtime (Raspberry Pi friendly)
+
+# --- Twin + dashboard (L1) ---
+fastapi>=0.110
+uvicorn[standard]>=0.29
+jinja2>=3.1
+
+# --- Agent (L3) ---
+# Local LLM is optional for the first demo. Install Ollama separately
+# (https://ollama.com) and run `ollama pull phi3` when you wire up real RAG.
+# The current agent works with a template + keyword retrieval, no LLM needed.
+
+python-dateutil>=2.9

@@ -1,0 +1,39 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>AeroTwin-Edge - Structural Twin</title>
+<style>
+  :root{font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+  body{margin:0;background:#eef2f6;color:#0a2540}
+  header{background:#0a2540;color:#fff;padding:18px 28px}
+  header h1{margin:0;font-size:20px;letter-spacing:.3px}
+  header p{margin:4px 0 0;opacity:.7;font-size:13px}
+  .wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px;padding:24px 28px}
+  .card{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden}
+  .head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px}
+  .tail{font-weight:700;font-size:17px} .loc{font-size:12px;color:#5a6b7b}
+  .grade{color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px}
+  .body{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:6px 16px 12px}
+  .metric{display:flex;flex-direction:column} .metric b{font-size:16px} .metric span{font-size:11px;color:#5a6b7b}
+  .air{padding:8px 16px;font-size:12px;color:#37474f;background:#f7f9fb}
+  table.hist{width:100%;border-collapse:collapse;font-size:12px}
+  table.hist th,table.hist td{border-top:1px solid #eee;padding:6px 16px;text-align:left}
+  .empty{padding:40px;text-align:center;color:#5a6b7b}
+</style></head>
+<body>
+  <header><h1>AeroTwin-Edge &middot; Per-Tail Structural Twin</h1>
+  <p>Offline edge inspection &middot; condition-based maintenance &middot; audit-ready</p></header>
+  <div class="wrap">
+        <div class="card">
+          <div class="head" style="border-left:6px solid #ef6c00">
+            <div><div class="tail">VT-AXB</div>
+                 <div class="loc">ATA 53 &middot; stringer 14 &middot; crack</div></div>
+            <div class="grade" style="background:#ef6c00">CRITICAL</div>
+          </div>
+          <div class="body">
+            <div class="metric"><b>8.0 mm</b><span>current size</span></div>
+            <div class="metric"><b>~4400 cycles to limit</b><span>progression</span></div>
+            <svg width="240" height="64" style="background:#fafafa;border:1px solid #eee;border-radius:6px"><line x1="6" y1="26.5" x2="234" y2="26.5" stroke="#c62828" stroke-dasharray="4 3" stroke-width="1"/><text x="236" y="23.5" font-size="9" fill="#c62828" text-anchor="end">SRM limit</text><polyline points="6.0,37.0 51.6,31.7 97.2,26.5 142.8,21.2 188.4,16.0 234.0,10.7" fill="none" stroke="#0a2540" stroke-width="2"/><circle cx="6.0" cy="37.0" r="2.5" fill="#0a2540"/><circle cx="51.6" cy="31.7" r="2.5" fill="#0a2540"/><circle cx="97.2" cy="26.5" r="2.5" fill="#0a2540"/><circle cx="142.8" cy="21.2" r="2.5" fill="#0a2540"/><circle cx="188.4" cy="16.0" r="2.5" fill="#0a2540"/><circle cx="234.0" cy="10.7" r="2.5" fill="#0a2540"/></svg>
+          </div>
+          <div class="air">airworthy — repair before limit crossing; shorten interval</div>
+          <table class="hist"><tr><th>Scan</th><th>Cycles</th><th>Size</th><th>Grade</th></tr><tr><td>2026-04-12</td><td>9800</td><td>6.0 mm</td><td>major</td></tr><tr><td>2026-07-01</td><td>12000</td><td>8.0 mm</td><td>critical</td></tr></table>
+        </div></div>
+</body></html>

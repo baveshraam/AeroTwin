@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Models / weights (download or train; don't commit big binaries)
+models/weights/
+*.pt
+*.onnx
+*.engine
+
+# Data the twin generates at runtime
+*.db
+*.sqlite
+data/twin.db
+data/runs/
+data/raw/
+
+# Media is big — keep demo media in Google Drive, not git
+*.mp4
+*.mov
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/

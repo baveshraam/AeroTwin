@@ -1,0 +1,6 @@
+defect_type,ata_zone,material,minor_max_mm,major_max_mm,limit_mm,manual_ref
+crack,53,aluminium-2024,2.0,6.0,12.0,SRM 53-30-01
+corrosion,53,aluminium-2024,0.5,3.0,8.0,SRM 53-30-05
+dent,53,aluminium-2024,5.0,15.0,25.0,SRM 53-10-02
+scratch,53,aluminium-2024,1.0,5.0,10.0,SRM 51-10-01
+crack,57,aluminium-7075,1.5,5.0,10.0,SRM 57-20-01
