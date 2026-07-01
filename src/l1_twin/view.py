@@ -7,6 +7,7 @@ install. Same view either way.
 from __future__ import annotations
 
 from src.l1_twin import db
+from src.l1_twin.twin import fleet_summary
 from src.l2_progress.paris import project_growth
 
 GRADE_COLOR = {
@@ -16,6 +17,52 @@ GRADE_COLOR = {
     "beyond-limit": "#c62828",
     "unknown": "#607d8b",
 }
+
+
+def _health_color(health: int, grounded: bool) -> str:
+    if grounded or health < 40:
+        return "#c62828"
+    if health < 70:
+        return "#f9a825"
+    return "#2e7d32"
+
+
+def _fleet_board(states: list[dict]) -> str:
+    """Fleet risk board: every tail ranked worst-first, with a condition-based call."""
+    if not states:
+        return ""
+    grounded = sum(1 for s in states if s["grounded"])
+    watch = sum(1 for s in states if not s["grounded"] and s["health"] < 70)
+    rows = []
+    for s in states:
+        c = _health_color(s["health"], s["grounded"])
+        rul = f"{s['rul_cycles']:,} cyc" if s["rul_cycles"] is not None else "—"
+        badge = "GROUNDED" if s["grounded"] else f"{s['health']}/100"
+        rows.append(f"""
+        <tr>
+          <td class="ft-tail">{s['tail']}</td>
+          <td><span class="ft-pill" style="background:{c}">{badge}</span></td>
+          <td><div class="ft-bar"><div style="width:{max(s['health'],4)}%;background:{c}"></div></div></td>
+          <td>{s['open_defects']}</td>
+          <td>{rul}</td>
+          <td class="ft-act">{s['action']}</td>
+        </tr>""")
+    return f"""
+    <section class="fleet">
+      <div class="fleet-head">
+        <h2>Fleet risk board</h2>
+        <div class="kpis">
+          <span class="kpi red">{grounded} grounded</span>
+          <span class="kpi amber">{watch} to watch</span>
+          <span class="kpi">{len(states)} tails</span>
+        </div>
+      </div>
+      <table class="fleet-tbl">
+        <tr><th>Tail</th><th>Health</th><th></th><th>Open</th><th>RUL (min)</th>
+            <th>Condition-based call vs 6,000-cyc calendar</th></tr>
+        {''.join(rows)}
+      </table>
+    </section>"""
 
 
 def _limit_from_grade(row: dict) -> float | None:
@@ -93,7 +140,9 @@ def render_home() -> str:
           <table class="hist"><tr><th>Scan</th><th>Cycles</th><th>Size</th><th>Grade</th></tr>{hist_rows}</table>
         </div>""")
 
-    body = "".join(cards) or '<p class="empty">No findings yet. Run <code>py -m src.pipeline --seed</code>.</p>'
+    fleet = _fleet_board(fleet_summary())
+    body = fleet + ('<div class="wrap">' + "".join(cards) + '</div>' if cards else
+                    '<p class="empty">No findings yet. Run <code>py -m src.pipeline --seed</code>.</p>')
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <title>AeroTwin-Edge - Structural Twin</title>
 <style>
@@ -113,9 +162,25 @@ def render_home() -> str:
   table.hist{{width:100%;border-collapse:collapse;font-size:12px}}
   table.hist th,table.hist td{{border-top:1px solid #eee;padding:6px 16px;text-align:left}}
   .empty{{padding:40px;text-align:center;color:#5a6b7b}}
+  .fleet{{padding:20px 28px 4px}}
+  .fleet-head{{display:flex;justify-content:space-between;align-items:baseline}}
+  .fleet-head h2{{margin:0;font-size:16px}}
+  .kpis{{display:flex;gap:8px}}
+  .kpi{{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:#dfe6ee;color:#37474f}}
+  .kpi.red{{background:#fde0e0;color:#c62828}} .kpi.amber{{background:#fdf0d2;color:#8a6100}}
+  .fleet-tbl{{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;
+              overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-top:10px}}
+  .fleet-tbl th{{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;
+                 color:#5a6b7b;padding:10px 14px;background:#f2f6fa}}
+  .fleet-tbl td{{border-top:1px solid #eef2f6;padding:10px 14px;font-size:13px;vertical-align:middle}}
+  .ft-tail{{font-weight:700}}
+  .ft-pill{{color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}}
+  .ft-bar{{width:90px;height:8px;background:#eef2f6;border-radius:6px;overflow:hidden}}
+  .ft-bar div{{height:100%}}
+  .ft-act{{font-size:12px;color:#37474f;max-width:340px}}
 </style></head>
 <body>
-  <header><h1>AeroTwin-Edge &middot; Per-Tail Structural Twin</h1>
-  <p>Offline edge inspection &middot; condition-based maintenance &middot; audit-ready</p></header>
-  <div class="wrap">{body}</div>
+  <header><h1>AeroTwin-Edge &middot; Digital Twin for Condition-Based MRO</h1>
+  <p>Offline edge structural twin &middot; per-tail &amp; per-fleet &middot; condition-based scheduling &middot; audit-ready</p></header>
+  {body}
 </body></html>"""

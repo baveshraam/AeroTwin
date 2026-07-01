@@ -13,12 +13,17 @@ TECHNICAL IMPLEMENTATION
 Describe the real architecture, then give a clear REAL vs ROADMAP split.
 
 IMPLEMENTED (POC, demonstrably runs):
-- YOLO detection + segmentation (SAHI tiling for thin cracks)
+- TWIN BRAIN (the hero): per-tail health index (0-100), remaining-useful-life in
+  cycles, condition-based scheduling call (PULL FORWARD / SAFE TO EXTEND / GROUND)
+  vs the calendar, and a FLEET RISK BOARD ranking all tails worst-first
+  (src/l1_twin/twin.py, with a unit self-check: python -m src.l1_twin.twin)
+- YOLO detection + segmentation (SAHI tiling for thin cracks) — the SENSOR
 - OpenCV + ArUco px->mm sizing
 - Configurable SRM allowable-damage-limit table (srm_limits.csv)
-- Per-tail twin store (seeded JSON/SQLite for the POC)
-- Paris-law progression module -> cycles-to-limit
+- Per-tail twin store (SQLite; seeded 4-tail fleet for the POC)
+- Paris-law + empirical two-scan progression -> cycles-to-limit
 - Retrieval-grounded agent drafting a cited work order, human sign-off gate
+- Hash-chained tamper-evident audit trail
 - Offline execution on Raspberry Pi-class hardware
 
 ARCHITECTED (roadmap, designed not built):
@@ -63,6 +68,9 @@ PROJECTED / ILLUSTRATIVE (engineering analysis, labelled as such):
 - lowering reliably detected crack size from ~4 mm to ~2 mm roughly doubles the
   safe-life inspection band via Damage Tolerance Analysis
 - one avoided AOG ground day ~ Rs 2 crore; edge node ~ Rs 10,000, no cloud cost
+- CBM value is two-sided: pull-forward the few fast growers (avoid the AOG event)
+  AND safely extend the healthy majority (each deferred needless check = recovered
+  downtime + labour). The fleet board shows both calls at once.
 - capability reported as POD a90/95 (NDT industry metric), not model accuracy
 - Indian MRO ~ $2B -> $4B by 2030 within a >$100B global MRO market
 

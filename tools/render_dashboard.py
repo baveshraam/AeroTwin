@@ -8,8 +8,11 @@ the deck before you install the web stack.
 """
 from __future__ import annotations
 
+import sys
 import webbrowser
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # allow `python tools/render_dashboard.py`
 
 from src.l1_twin.view import render_home
 

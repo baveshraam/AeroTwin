@@ -7,51 +7,52 @@ that honesty reads as engineering maturity.
 SLIDE 0 — TITLE
 ================================================================
 AeroTwin-Edge
-Offline Edge AI for Aircraft Structural Inspection & Defect Detection
-— with per-tail digital twin, condition-based predictive maintenance,
-  and federated fleet learning.
+An Offline, Per-Tail & Per-Fleet Structural DIGITAL TWIN for
+Condition-Based Aircraft Maintenance (MRO) — at the edge.
+— defect detection is the sensor; the twin is the product.
 
-Tata Technologies InnoVent-27 | Track 3.2.3 Aerospace
-Edge AI for Intelligent Inspection & Defect Detection
+Tata Technologies InnoVent-27 | Aerospace
+Edge AI for Digital Twin-Enabled MRO
 Team: [names] | Stage 2 — Virtual Proof of Concept
 
 ================================================================
 SLIDE 1 — PROBLEM STATEMENT
 ================================================================
-Aircraft structural inspection is still manual, visual and calendar-driven —
-and it fails in three ways at the point of work:
+Aircraft structural maintenance is scheduled on a fixed CALENDAR / hard-time
+interval — a blind clock that is wrong in two expensive directions at once:
 
-- Inconsistent detection. Probability of Detection for fine cracks and early
-  corrosion varies with inspector skill, experience and fatigue; severity is
-  judged against SRM limits by eye, so the airworthiness measurement is rarely
-  repeatable.
-- Poor traceability. Findings sit on paper task cards and siloed systems. There
-  is no continuous condition history per tail number, so "did this crack grow
-  since the last C-check?" is genuinely hard to answer.
-- Reactive and costly. Inspection runs under AOG conditions (~ Rs 8 lakh-1.25
-  crore per hour). Fixed-interval checks over-maintain healthy structure while
-  failing to advance maintenance on fast-growing defects.
+- OVER-maintenance. The healthy majority of the fleet is pulled off-line for
+  checks it did not need — wasted downtime, labour and parts.
+- UNDER-maintenance. The few tails with a fast-growing crack or advancing
+  corrosion can outrun the interval and reach an SRM limit BETWEEN scheduled
+  checks — the safety and AOG tail-risk (~ Rs 8 lakh-1.25 crore per grounded hr).
 
-And cloud AI cannot help: ITAR-restricted hangars are network-isolated and
-imagery legally cannot leave the site.
+Root cause: there is NO continuous, per-tail condition record to schedule
+against. Findings sit on paper task cards and siloed systems, so "did this crack
+grow since the last C-check on THIS tail?" is genuinely hard to answer — and
+severity is still judged against SRM limits by eye, so the measurement that feeds
+any decision isn't even repeatable.
+
+And cloud can't fix it: ITAR-restricted hangars are network-isolated and imagery
+legally cannot leave the site. The missing piece is a digital twin, held at the edge.
 
 ================================================================
 SLIDE 2 — OBJECTIVE
 ================================================================
-Deliver an offline, edge-resident inspection capability that runs on a
-Raspberry Pi-class device and, in a single pass:
+Deliver an offline, edge-resident structural DIGITAL TWIN on a Raspberry
+Pi-class device that maintains, per tail and across the fleet:
 
-1. Detects, segments and severity-grades structural defects against SRM
-   allowable-damage limits — turning a subjective visual judgement into a
-   repeatable, millimetre-accurate measurement.
-2. Records every finding in a persistent digital twin per tail number, tracks
-   defect progression across checks, and predicts the flight cycle at which a
-   defect crosses its limit.
-3. Drafts the manual-cited work order via an agentic copilot, with the
-   certifying engineer retaining final authority.
+1. A condition record — every inspection appended, severity-graded against SRM
+   allowable-damage limits (a repeatable mm measurement, not an eyeball).
+2. A twin state — a health index (0-100) per aircraft, remaining useful life in
+   flight cycles, and a CONDITION-BASED scheduling call: PULL the check FORWARD on
+   a fast grower, SAFELY EXTEND it on a healthy jet, GROUND a beyond-limit one.
+3. A fleet risk board — every tail ranked worst-first, so the morning planner
+   sees at a glance which aircraft needs attention and which is safe to defer.
+4. A cited, human-signed work order + a tamper-evident audit trail for the regulator.
 
-Goal: shift aircraft structural maintenance from reactive/calendar-based to
-predictive/condition-based — fully offline and ITAR-compliant.
+Goal: replace blind calendar maintenance with condition-based maintenance (CBM+)
+— fully offline and ITAR-compliant. Defect detection is one sensor feeding this twin.
 
 ================================================================
 SLIDE 3 — APPROACH
@@ -73,31 +74,39 @@ not depend on thousands of labelled aerospace defect images.
 ================================================================
 SLIDE 4 — SOLUTION OVERVIEW
 ================================================================
-AeroTwin-Edge — Condition-Based Structural Health Management at the edge.
+AeroTwin-Edge — a structural digital twin driving Condition-Based MRO at the edge.
 
-The unbroken chain (one tail, one defect, all offline on the Pi):
-  Crack on a skin panel
-    -> DETECT + GRADE  "ATA 53, stringer 14, crack 8.0 mm — MAJOR (67% of limit)"
-    -> TWIN            "tail VT-XYZ, was 6.0 mm last C-check, +2.0 mm"
-    -> PREDICT         "crosses the 12 mm SRM limit in ~40 flight cycles"
+The unbroken chain (offline on the Pi):
+  Inspection of a skin panel  (camera today; borescope / eddy-current later)
+    -> SENSE + GRADE   "ATA 53, stringer 14, crack 8.0 mm — MAJOR (67% of limit)"
+    -> TWIN            "tail VT-AXB, was 6.0 mm last C-check, +2.0 mm; health 33/100"
+    -> PREDICT         "remaining useful life ~N flight cycles to the 12 mm SRM limit"
+    -> DECIDE          "PULL INSPECTION FORWARD — growth outruns the calendar interval"
+    -> FLEET BOARD     4 tails ranked: 1 GROUNDED, 2 PULL-FORWARD, 1 SAFE-TO-EXTEND 30k cyc
     -> AGENT           drafts a work order citing SRM 53-xx; certifying staff sign
   Hash-chain logged. Pi in airplane mode. Verdict in seconds.
 
-Not "an AI that spots cracks" — the system that decides, per tail, what to fix
-and when, and proves it to the regulator.
+Not "an AI that spots cracks" — the digital twin that decides, per tail AND across
+the fleet, what to fix, when, on which aircraft, and proves it to the regulator.
 
 ================================================================
 SLIDE 5 — TECHNICAL IMPLEMENTATION
 ================================================================
 IMPLEMENTED (this POC):
-- Detection/segmentation: YOLO segmentation with SAHI tiling for thin, small,
-  high-aspect-ratio cracks (pixel-accurate masks, not coarse boxes).
-- Severity/sizing: OpenCV + ArUco fiducial -> pixels to millimetres, graded
-  against a configurable SRM allowable-damage-limit table.
-- Digital twin: per-tail store; findings pinned to ATA zone / station / stringer.
-- Progression: Paris-law fatigue crack-growth model -> cycles-to-limit.
+- DIGITAL TWIN BRAIN (the hero): per-tail health index (0-100) from worst open
+  defect vs its SRM limit; remaining-useful-life = min cycles-to-limit across open
+  defects; condition-based scheduling decision (PULL FORWARD / SAFE TO EXTEND /
+  GROUND) quantified against the calendar baseline; FLEET RISK BOARD ranking every
+  tail worst-first. (src/l1_twin/twin.py — pure, unit-tested logic.)
+- Twin record: per-tail SQLite store; findings pinned to ATA zone / station / stringer.
+- Sensor (detection/segmentation): YOLO segmentation with SAHI tiling for thin,
+  small, high-aspect-ratio cracks (pixel-accurate masks, not coarse boxes).
+- Severity/sizing: OpenCV + ArUco fiducial -> pixels to millimetres, graded against
+  a configurable SRM allowable-damage-limit table.
+- Progression: Paris-law + empirical two-scan growth -> cycles-to-limit.
 - Agentic copilot: retrieval-grounded drafting over an AMM/SRM excerpt corpus,
   citation-required, human sign-off gate.
+- Audit: hash-chained, tamper-evident decision log (verify() re-walks the chain).
 - Edge runtime: offline execution on Raspberry Pi 5; latency shown on screen.
 
 ARCHITECTED (roadmap):
@@ -147,6 +156,9 @@ PROJECTED / ILLUSTRATIVE (engineering analysis — to validate, not yet deployed
   greater safety margin.
 - Economics: one avoided AOG ground day ~ Rs 2 crore; the system can recover its
   cost on a single prevented event. Edge node ~ Rs 10,000, no recurring cloud cost.
+- CBM lever (both directions): the twin PULLS FORWARD the few fast-growing tails
+  (avoids the AOG event) AND SAFELY EXTENDS the healthy majority (each deferred
+  unnecessary check = recovered downtime + labour). Value = avoided AOG + deferred checks.
 - Capability reported as Probability of Detection at a90/95 (NDT industry metric),
   not model accuracy — preserving credibility with regulators and certifying staff.
 - Market: Indian MRO ~ $2B -> $4B by 2030 within a >$100B global MRO market, where
@@ -159,19 +171,22 @@ physical validation.)
 ================================================================
 SLIDE 8 — DEMONSTRATION
 ================================================================
-Live / recorded virtual POC — one tail, one defect, fully offline on the Pi:
+Live / recorded virtual POC — fully offline on the Pi:
 
   1. Scan a cracked skin panel (ArUco fiducial in frame).
   2. REAL: detect + segment the crack -> size to 8.0 mm -> grade MAJOR against the
      12 mm SRM limit.
-  3. Digital twin: tail VT-XYZ, ATA 53 / stringer 14; was 6.0 mm last C-check.
-  4. Progression: Paris-law projects crossing the 12 mm limit in ~40 cycles ->
-     pull the inspection forward (condition-based, not calendar-based).
+  3. Digital twin: tail VT-AXB, ATA 53 / stringer 14; was 6.0 mm last C-check ->
+     health drops; remaining useful life ~N cycles to the limit.
+  4. FLEET RISK BOARD (the money shot): four tails ranked worst-first — one GROUNDED
+     (beyond limit), two PULL-FORWARD (growth outruns the calendar), one SAFE-TO-
+     EXTEND 30,000 cycles. Condition-based maintenance on one screen.
   5. Agent drafts the work order citing SRM 53-xx; certifying engineer signs.
-  6. Pi in airplane mode throughout; every step hash-chain logged.
+  6. Tamper demo: edit one audit-log line -> verify() fails. Pi in airplane mode
+     throughout; every step hash-chain logged.
 
-What is real vs roadmap is stated openly — detection, sizing, grading, twin,
-progression and the cited work order are demonstrated; federation and full
-certification are the roadmap.
+What is real vs roadmap is stated openly — the twin brain, fleet board, sensing,
+sizing, grading, progression, cited work order and audit are demonstrated;
+federation and full certification are the roadmap.
 
 [Embed: aerotwin_poc_2min.mp4 — see 02_POC_Media/video/]

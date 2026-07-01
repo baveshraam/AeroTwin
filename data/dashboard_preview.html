@@ -17,11 +17,74 @@
   table.hist{width:100%;border-collapse:collapse;font-size:12px}
   table.hist th,table.hist td{border-top:1px solid #eee;padding:6px 16px;text-align:left}
   .empty{padding:40px;text-align:center;color:#5a6b7b}
+  .fleet{padding:20px 28px 4px}
+  .fleet-head{display:flex;justify-content:space-between;align-items:baseline}
+  .fleet-head h2{margin:0;font-size:16px}
+  .kpis{display:flex;gap:8px}
+  .kpi{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:#dfe6ee;color:#37474f}
+  .kpi.red{background:#fde0e0;color:#c62828} .kpi.amber{background:#fdf0d2;color:#8a6100}
+  .fleet-tbl{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;
+              overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-top:10px}
+  .fleet-tbl th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;
+                 color:#5a6b7b;padding:10px 14px;background:#f2f6fa}
+  .fleet-tbl td{border-top:1px solid #eef2f6;padding:10px 14px;font-size:13px;vertical-align:middle}
+  .ft-tail{font-weight:700}
+  .ft-pill{color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+  .ft-bar{width:90px;height:8px;background:#eef2f6;border-radius:6px;overflow:hidden}
+  .ft-bar div{height:100%}
+  .ft-act{font-size:12px;color:#37474f;max-width:340px}
 </style></head>
 <body>
-  <header><h1>AeroTwin-Edge &middot; Per-Tail Structural Twin</h1>
-  <p>Offline edge inspection &middot; condition-based maintenance &middot; audit-ready</p></header>
-  <div class="wrap">
+  <header><h1>AeroTwin-Edge &middot; Digital Twin for Condition-Based MRO</h1>
+  <p>Offline edge structural twin &middot; per-tail &amp; per-fleet &middot; condition-based scheduling &middot; audit-ready</p></header>
+  
+    <section class="fleet">
+      <div class="fleet-head">
+        <h2>Fleet risk board</h2>
+        <div class="kpis">
+          <span class="kpi red">1 grounded</span>
+          <span class="kpi amber">2 to watch</span>
+          <span class="kpi">4 tails</span>
+        </div>
+      </div>
+      <table class="fleet-tbl">
+        <tr><th>Tail</th><th>Health</th><th></th><th>Open</th><th>RUL (min)</th>
+            <th>Condition-based call vs 6,000-cyc calendar</th></tr>
+        
+        <tr>
+          <td class="ft-tail">VT-AXE</td>
+          <td><span class="ft-pill" style="background:#c62828">GROUNDED</span></td>
+          <td><div class="ft-bar"><div style="width:4%;background:#c62828"></div></div></td>
+          <td>1</td>
+          <td>0 cyc</td>
+          <td class="ft-act">GROUND - beyond-limit damage; embody certified repair before return to service</td>
+        </tr>
+        <tr>
+          <td class="ft-tail">VT-AXD</td>
+          <td><span class="ft-pill" style="background:#c62828">12/100</span></td>
+          <td><div class="ft-bar"><div style="width:12%;background:#c62828"></div></div></td>
+          <td>1</td>
+          <td>3,000 cyc</td>
+          <td class="ft-act">PULL INSPECTION FORWARD 4500 cycles - defect growth outruns the 6000-cycle calendar interval</td>
+        </tr>
+        <tr>
+          <td class="ft-tail">VT-AXB</td>
+          <td><span class="ft-pill" style="background:#c62828">33/100</span></td>
+          <td><div class="ft-bar"><div style="width:33%;background:#c62828"></div></div></td>
+          <td>1</td>
+          <td>4,400 cyc</td>
+          <td class="ft-act">PULL INSPECTION FORWARD 3800 cycles - defect growth outruns the 6000-cycle calendar interval</td>
+        </tr>
+        <tr>
+          <td class="ft-tail">VT-AXC</td>
+          <td><span class="ft-pill" style="background:#2e7d32">75/100</span></td>
+          <td><div class="ft-bar"><div style="width:75%;background:#2e7d32"></div></div></td>
+          <td>1</td>
+          <td>72,000 cyc</td>
+          <td class="ft-act">SAFE TO EXTEND inspection 30000 cycles - structure is healthier than the calendar assumes (deferred downtime)</td>
+        </tr>
+      </table>
+    </section><div class="wrap">
         <div class="card">
           <div class="head" style="border-left:6px solid #ef6c00">
             <div><div class="tail">VT-AXB</div>
@@ -35,5 +98,47 @@
           </div>
           <div class="air">airworthy — repair before limit crossing; shorten interval</div>
           <table class="hist"><tr><th>Scan</th><th>Cycles</th><th>Size</th><th>Grade</th></tr><tr><td>2026-04-12</td><td>9800</td><td>6.0 mm</td><td>major</td></tr><tr><td>2026-07-01</td><td>12000</td><td>8.0 mm</td><td>critical</td></tr></table>
+        </div>
+        <div class="card">
+          <div class="head" style="border-left:6px solid #f9a825">
+            <div><div class="tail">VT-AXC</div>
+                 <div class="loc">ATA 53 &middot; stringer 09 &middot; crack</div></div>
+            <div class="grade" style="background:#f9a825">MAJOR</div>
+          </div>
+          <div class="body">
+            <div class="metric"><b>3.0 mm</b><span>current size</span></div>
+            <div class="metric"><b>~72000 cycles to limit</b><span>progression</span></div>
+            <svg width="240" height="64" style="background:#fafafa;border:1px solid #eee;border-radius:6px"><line x1="6" y1="10.7" x2="234" y2="10.7" stroke="#c62828" stroke-dasharray="4 3" stroke-width="1"/><text x="236" y="7.7" font-size="9" fill="#c62828" text-anchor="end">SRM limit</text><polyline points="6.0,46.2 51.6,44.2 97.2,42.2 142.8,40.3 188.4,38.3 234.0,36.3" fill="none" stroke="#0a2540" stroke-width="2"/><circle cx="6.0" cy="46.2" r="2.5" fill="#0a2540"/><circle cx="51.6" cy="44.2" r="2.5" fill="#0a2540"/><circle cx="97.2" cy="42.2" r="2.5" fill="#0a2540"/><circle cx="142.8" cy="40.3" r="2.5" fill="#0a2540"/><circle cx="188.4" cy="38.3" r="2.5" fill="#0a2540"/><circle cx="234.0" cy="36.3" r="2.5" fill="#0a2540"/></svg>
+          </div>
+          <div class="air">airworthy — schedule repair</div>
+          <table class="hist"><tr><th>Scan</th><th>Cycles</th><th>Size</th><th>Grade</th></tr><tr><td>2026-05-02</td><td>8000</td><td>2.5 mm</td><td>major</td></tr><tr><td>2026-07-01</td><td>12000</td><td>3.0 mm</td><td>major</td></tr></table>
+        </div>
+        <div class="card">
+          <div class="head" style="border-left:6px solid #ef6c00">
+            <div><div class="tail">VT-AXD</div>
+                 <div class="loc">ATA 53 &middot; lap joint 22 &middot; corrosion</div></div>
+            <div class="grade" style="background:#ef6c00">CRITICAL</div>
+          </div>
+          <div class="body">
+            <div class="metric"><b>7.0 mm</b><span>current size</span></div>
+            <div class="metric"><b>~3000 cycles to limit</b><span>progression</span></div>
+            <svg width="240" height="64" style="background:#fafafa;border:1px solid #eee;border-radius:6px"><line x1="6" y1="26.5" x2="234" y2="26.5" stroke="#c62828" stroke-dasharray="4 3" stroke-width="1"/><text x="236" y="23.5" font-size="9" fill="#c62828" text-anchor="end">SRM limit</text><polyline points="6.0,30.4 51.6,26.5 97.2,22.5 142.8,18.6 188.4,14.7 234.0,10.7" fill="none" stroke="#0a2540" stroke-width="2"/><circle cx="6.0" cy="30.4" r="2.5" fill="#0a2540"/><circle cx="51.6" cy="26.5" r="2.5" fill="#0a2540"/><circle cx="97.2" cy="22.5" r="2.5" fill="#0a2540"/><circle cx="142.8" cy="18.6" r="2.5" fill="#0a2540"/><circle cx="188.4" cy="14.7" r="2.5" fill="#0a2540"/><circle cx="234.0" cy="10.7" r="2.5" fill="#0a2540"/></svg>
+          </div>
+          <div class="air">airworthy — repair before limit crossing; shorten interval</div>
+          <table class="hist"><tr><th>Scan</th><th>Cycles</th><th>Size</th><th>Grade</th></tr><tr><td>2026-04-20</td><td>9000</td><td>6.0 mm</td><td>critical</td></tr><tr><td>2026-07-01</td><td>12000</td><td>7.0 mm</td><td>critical</td></tr></table>
+        </div>
+        <div class="card">
+          <div class="head" style="border-left:6px solid #c62828">
+            <div><div class="tail">VT-AXE</div>
+                 <div class="loc">ATA 53 &middot; stringer 14 &middot; crack</div></div>
+            <div class="grade" style="background:#c62828">BEYOND-LIMIT</div>
+          </div>
+          <div class="body">
+            <div class="metric"><b>13.0 mm</b><span>current size</span></div>
+            <div class="metric"><b>insufficient data</b><span>progression</span></div>
+            <svg width="240" height="64" style="background:#fafafa;border:1px solid #eee;border-radius:6px"><line x1="6" y1="14.4" x2="234" y2="14.4" stroke="#c62828" stroke-dasharray="4 3" stroke-width="1"/><text x="236" y="11.4" font-size="9" fill="#c62828" text-anchor="end">SRM limit</text><polyline points="6.0,10.7" fill="none" stroke="#0a2540" stroke-width="2"/><circle cx="6.0" cy="10.7" r="2.5" fill="#0a2540"/></svg>
+          </div>
+          <div class="air">NOT AIRWORTHY — grounded until repair</div>
+          <table class="hist"><tr><th>Scan</th><th>Cycles</th><th>Size</th><th>Grade</th></tr><tr><td>2026-07-01</td><td>12000</td><td>13.0 mm</td><td>beyond-limit</td></tr></table>
         </div></div>
 </body></html>

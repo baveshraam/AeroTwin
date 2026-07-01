@@ -1,15 +1,28 @@
-AeroTwin-Edge — 48-HOUR POC BUILD RUNBOOK
-The whole POC = ONE unbroken 2-minute chain, one tail, one defect, all offline.
-Real where it's cheap to be real; seeded where real would cost days.
+AeroTwin-Edge — POC BUILD RUNBOOK
+Problem statement: EDGE AI FOR DIGITAL TWIN-ENABLED MRO.
+The POC = ONE unbroken chain (sense -> twin -> predict -> DECIDE -> fleet -> agent),
+all offline. Real where it's cheap to be real; seeded where real would cost days.
 
 ==================================================================
 THE ONE FEATURE TO NAIL (judges reward this above all)
 ==================================================================
-Calibrated millimetre severity-grading of a detected defect against the SRM
-allowable-damage-limit table, feeding a per-tail crack-growth prediction.
-That is the bridge from "a CV model saw something" to "an airworthiness decision."
-A bounding box is a commodity; px->mm->SRM-grade->cycles-to-limit is not. If the
-rest were mocked, this chain being REAL still carries the submission.
+The TWIN's condition-based DECISION and FLEET RISK BOARD: per-tail health index +
+remaining-useful-life -> "PULL this tail's inspection FORWARD / SAFE TO EXTEND that
+one / GROUND this one", ranked across the fleet against the calendar baseline.
+THAT is the digital twin — the thing a defect detector on its own can never be. The
+sensor chain (px->mm->SRM-grade->cycles-to-limit) is the bridge that feeds it; the
+twin brain is the payoff. If everything else were mocked, the twin turning a fleet
+of findings into a scheduling call still carries the submission.
+
+==================================================================
+RUN THE REAL REPO (this is what the video shows)
+==================================================================
+  python -m src.pipeline --seed        # reset + seed a deterministic 4-tail fleet
+  uvicorn src.l1_twin.app:app --port 8000   # -> fleet risk board + per-tail twin
+  #   or, zero web stack:  python tools/render_dashboard.py  (static HTML screenshot)
+  python -m src.l1_twin.twin           # twin self-check (health/RUL/CBM math)
+  python -m src.pipeline --image panel.jpg --real   # real detector once trained
+The fleet board (1 grounded, 2 pull-forward, 1 safe-to-extend) is the headline image.
 
 ==================================================================
 A. REAL CORE  (~4-6 hrs, one ML person)  -> detect_and_size.py

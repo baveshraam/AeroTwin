@@ -22,6 +22,7 @@ from src.l0_detect.detect import detect_defects
 from src.l0_detect.grade import grade_defect
 from src.l0_detect.sizing import mm_per_pixel, measure_mm
 from src.l1_twin import db
+from src.l1_twin.twin import tail_state
 from src.l2_progress.paris import empirical_cycles_to_limit, paris_cycles_to_limit
 from src.l3_agent import audit
 from src.l3_agent.agent import draft_work_order
@@ -96,6 +97,9 @@ def run_scan(
     }
     db.add_finding(finding)
 
+    # ---- L1b: twin state — what does this do to the aircraft's health & schedule? ----
+    state = tail_state(tail, db.findings_for_tail(tail))
+
     # ---- L3: agent drafts work order + audit ----
     work_order = draft_work_order(finding, grade, progression)
     entry = audit.append({"finding": finding, "work_order": work_order})
@@ -111,31 +115,50 @@ def run_scan(
         else:
             print(f"[L1] tail {tail}: first recorded scan of this defect")
         print(f"[L2] {progression}")
+        print(f"[TWIN] {tail} health {state['health']}/100 "
+              f"({state['open_defects']} open) -> {state['basis'].upper()}: {state['action']}")
         print(f"[L3] {work_order['status']}: {work_order.get('summary', work_order.get('reason',''))}")
         if work_order.get("citation"):
             print(f"     cites {work_order['citation']} - {work_order['recommended_action']}")
         print(f"[AUDIT] chain hash {entry['hash'][:16]}...  verified={audit.verify()}  "
               f"(awaiting certifying-staff signature)")
 
-    return {"finding": finding, "grade": grade, "work_order": work_order, "audit": entry}
+    return {"finding": finding, "grade": grade, "twin": state,
+            "work_order": work_order, "audit": entry}
 
 
 def seed_demo() -> None:
-    """Create a believable 2-scan growth story on one tail for the dashboard/demo."""
-    print("Seeding demo growth story for tail VT-AXB ...\n")
-    # Scan 1: earlier check, smaller crack. Force a smaller mock size via scale.
-    _seed_scan(mask_px=240.0, cycles=9800, date="2026-04-12")   # ~6.0 mm
-    print()
-    _seed_scan(mask_px=320.0, cycles=12000, date="2026-07-01")  # ~8.0 mm
+    """Seed a small FLEET so the twin has something to rank — the demo money shot.
+
+    Four tails, four stories: a growing crack (pull-forward), a healthy jet (safe to
+    extend), a corrosion patch near limit, and one beyond-limit (grounded).
+    """
+    print("Seeding demo fleet (4 tails) ...\n")
+    db.DB.unlink(missing_ok=True)  # ponytail: --seed is a demo reset; start from a clean twin
+    audit.LOG.unlink(missing_ok=True)
+    # VT-AXB — the hero growth story: crack 6.0 -> 8.0 mm across two C-checks.
+    _seed_scan("VT-AXB", "crack", "53", "stringer 14", mask_px=240.0, cycles=9800, date="2026-04-12")
+    _seed_scan("VT-AXB", "crack", "53", "stringer 14", mask_px=320.0, cycles=12000, date="2026-07-01")
+    # VT-AXC — healthy: a small 3.0 mm crack, plenty of life -> safe to extend.
+    _seed_scan("VT-AXC", "crack", "53", "stringer 09", mask_px=100.0, cycles=8000, date="2026-05-02")
+    _seed_scan("VT-AXC", "crack", "53", "stringer 09", mask_px=120.0, cycles=12000, date="2026-07-01")
+    # VT-AXD — corrosion patch marching toward its 8.0 mm limit.
+    _seed_scan("VT-AXD", "corrosion", "53", "lap joint 22", mask_px=240.0, cycles=9000, date="2026-04-20")
+    _seed_scan("VT-AXD", "corrosion", "53", "lap joint 22", mask_px=280.0, cycles=12000, date="2026-07-01")
+    # VT-AXE — beyond limit: 13.0 mm crack past the 12 mm SRM limit -> grounded.
+    _seed_scan("VT-AXE", "crack", "53", "stringer 14", mask_px=520.0, cycles=12000, date="2026-07-01")
     print("\nDone. Start the dashboard:  uvicorn src.l1_twin.app:app --port 8000")
 
 
-def _seed_scan(mask_px: float, cycles: int, date: str) -> None:
-    # Inject an explicit detection of a known size so the two scans show growth.
+def _seed_scan(tail: str, defect: str, ata: str, location: str,
+               mask_px: float, cycles: int, date: str) -> None:
+    # Inject an explicit detection of a known size so the growth stories are stable.
     run_scan(
-        tail="VT-AXB", location="stringer 14", scan_date=date, cycles=cycles, mock=True,
-        detections=[{"defect_type": "crack", "mask_length_px": mask_px, "confidence": 0.84}],
+        tail=tail, ata_zone=ata, location=location, scan_date=date, cycles=cycles, mock=True,
+        detections=[{"defect_type": defect, "mask_length_px": mask_px, "confidence": 0.84}],
+        quiet=True,
     )
+    print(f"  seeded {tail}: {defect} @ ATA {ata} {location}, {date}, {cycles} cyc")
 
 
 def main() -> None:

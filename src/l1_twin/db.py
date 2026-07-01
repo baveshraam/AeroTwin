@@ -80,6 +80,13 @@ def history(tail: str, location: str, defect_type: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def findings_for_tail(tail: str) -> list[dict]:
+    con = connect()
+    rows = con.execute("SELECT * FROM findings WHERE tail=? ORDER BY cycles", (tail,)).fetchall()
+    con.close()
+    return [dict(r) for r in rows]
+
+
 def all_findings() -> list[dict]:
     con = connect()
     rows = con.execute("SELECT * FROM findings ORDER BY tail, cycles").fetchall()
