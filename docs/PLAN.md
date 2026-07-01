@@ -25,17 +25,26 @@ against, and cloud can't hold it (ITAR-isolated hangars). The twin is the missin
 - **Sensor (L0)** detect + ArUco mm sizing + SRM severity grade .......... BUILD
 - **Twin (L1)** per-tail SQLite record + **twin brain** (health index, RUL,
   fleet risk board, condition-based scheduling vs calendar) + dashboard ... BUILD ← hero
+- **Prescribe + price (L1b)** capacity-constrained fleet plan + **rupee ledger**
+  (downtime recovered + AOG risk avoided − risk carried) ................. BUILD ← the payoff
 - **Predict (L2)** Paris-law / empirical growth → cycles-to-limit ......... BUILD
 - **Agent (L3)** citation-required work order + hash-chain audit .......... BUILD
 - **Federated fleet learning / ops / AR** ............................... DECK ONLY
 
-## What makes it a *twin*, not a defect log (the depth we added)
-`src/l1_twin/twin.py` is the brain:
+## What makes it a *platform*, not a defect log (predict → prescribe → price)
+`src/l1_twin/twin.py` is the brain (**predict + prescribe**):
 - **Health index (0–100)** per tail from worst open defect vs its SRM limit.
 - **RUL** — minimum cycles-to-limit across the tail's open defects.
-- **Condition-based decision** — PULL FORWARD a fast grower, SAFE TO EXTEND a healthy
+- **Condition-based decision** — PULL FORWARD a fast grower, SAFE TO DEFER a healthy
   jet, GROUND a beyond-limit one — each quantified against the calendar baseline.
 - **Fleet risk board** — every tail ranked worst-first; the planner's morning screen.
+
+`src/l1_twin/planner.py` is the payoff (**price**):
+- **Capacity-constrained plan** — with only N hangar slots, service the highest-risk
+  tails first, defer the healthy, and make the *carried* risk explicit when at-risk > slots.
+- **Rupee ledger** — downtime recovered (deferred healthy checks) + AOG risk avoided
+  (fast growers serviced in time) − risk carried = **net value vs the blind calendar**.
+- All money/capacity constants are ILLUSTRATIVE and in one place — calibrate per operator.
 
 ## Sequence
 - **Now:** repo runs end-to-end in mock mode (done). Fleet seed + dashboard fleet board
@@ -51,8 +60,10 @@ against, and cloud can't hold it (ITAR-isolated hangars). The twin is the missin
 2. Show a cracked panel → `python -m src.pipeline --image panel.jpg --real`.
 3. **Twin:** tail VT-AXB grew 6.0 → 8.0 mm; health drops; "~N cycles to limit".
 4. **Fleet risk board:** four tails ranked — one GROUNDED, two PULL FORWARD, one SAFE TO
-   EXTEND 30,000 cycles. *This* is condition-based maintenance on a screen.
-5. Agent drafts the SRM-cited work order; human signs; audit chain verified.
+   DEFER. *This* is condition-based maintenance on a screen.
+5. **The money slide:** the prescriptive plan + rupee ledger — "ground 1, service 2,
+   defer 1 → ~₹6 Cr net value this window vs the calendar." Nobody else prices it.
+6. Agent drafts the SRM-cited work order; human signs; audit chain verified.
 6. Pi in **airplane mode**, latency on screen. Close on the moat: edge + twin + fleet
    CBM + agent + certifiable — no competitor combines all five.
 

@@ -31,19 +31,25 @@ the crack box. The numbers you SAY, the dashboard, and SLIDES 4/8 must all match
          the Structural Repair Manual limit. That's the calibrated measurement the twin
          records; detection is just the sensor."
 
-[0:50-1:20]  THE TWIN + THE FLEET BOARD  (the hero — dashboard)
+[0:50-1:10]  THE TWIN + THE FLEET BOARD  (predict + prescribe — dashboard)
   [SCREEN] Dashboard: tail VT-AXB history 6.0 mm -> 8.0 mm, health index drops,
-           remaining-useful-life to the 12 mm limit. Then scroll to the FLEET RISK
-           BOARD: four tails ranked worst-first.
+           remaining-useful-life to the 12 mm limit. Then the FLEET RISK BOARD: four
+           tails ranked worst-first.
   [SAY] "Every finding writes into this tail's twin. VT-AXB grew from six to eight
-         millimetres since the last check; its health index drops and the twin predicts
-         the cycles left to the limit. Now the fleet board — every tail ranked worst
-         first. One is beyond limit and GROUNDED. Two are growing fast, so the twin
-         PULLS their inspections FORWARD. And one is healthy enough to SAFELY EXTEND by
-         thirty thousand cycles — recovered downtime the calendar would have wasted.
-         That is condition-based maintenance, on one screen."
+         millimetres; its health drops and the twin predicts the cycles left to the
+         limit. The fleet board ranks every tail worst-first — one beyond limit and
+         grounded, two growing fast, one healthy."
 
-[1:20-1:45]  AGENTIC COPILOT + AUDIT
+[1:10-1:30]  THE MONEY SHOT  (price — the rupee ledger)
+  [SCREEN] Scroll to the PRESCRIPTIVE PLAN + RUPEE LEDGER panel: ground 1, service 2,
+           defer 1; big numbers — net value, AOG risk avoided, downtime recovered.
+  [SAY] "But it doesn't stop at a dashboard — it prescribes and prices. With only three
+         hangar slots, it grounds one, services the two fast growers, and safely defers
+         the healthy one. Against the blind calendar that's about six crore rupees of net
+         value this window — downtime recovered plus AOG risk avoided — and every rupee
+         traces to a constant you can see. That is the leap from detector to decision."
+
+[1:30-1:45]  AGENTIC COPILOT + AUDIT
   [SCREEN] Agent drafts a work order citing SRM 53-xx; "Awaiting certifying-engineer
            sign-off". Then edit one audit-log line -> verify() prints FALSE.
   [SAY] "For each call, an on-device agent drafts the work order — every claim cited to
@@ -62,8 +68,8 @@ the crack box. The numbers you SAY, the dashboard, and SLIDES 4/8 must all match
 
 DELIVERY TIPS
 - One continuous take per segment; calm, declarative voice.
-- The FLEET BOARD (0:50-1:20) is the credibility shot — hold it long enough to read
-  all four tails and their calls. Do NOT rush it.
+- The RUPEE LEDGER money shot (1:10-1:30) is the credibility beat — hold the net-value
+  number and let it land. Hold the fleet board long enough to read all four tails too.
 - `python -m src.pipeline --seed` gives a deterministic 4-tail fleet, so every take
   shows the same board. `python tools/render_dashboard.py` for a clean static capture.
 - Record one clean end-to-end backup take and keep it on disk before the real one.

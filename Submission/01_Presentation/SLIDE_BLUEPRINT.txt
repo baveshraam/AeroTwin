@@ -7,9 +7,12 @@ that honesty reads as engineering maturity.
 SLIDE 0 — TITLE
 ================================================================
 AeroTwin-Edge
-An Offline, Per-Tail & Per-Fleet Structural DIGITAL TWIN for
-Condition-Based Aircraft Maintenance (MRO) — at the edge.
-— defect detection is the sensor; the twin is the product.
+The ₹10,000 box that decides which jet to ground — and which to fly.
+An offline, per-tail & per-fleet structural DIGITAL TWIN that goes
+PREDICT → PRESCRIBE → PRICE: it forecasts each aircraft's remaining
+life, prescribes a hangar-capacity-constrained fleet plan, and prices
+every decision in rupees against the blind calendar.
+— defect detection is the sensor; the priced fleet plan is the payoff.
 
 Tata Technologies InnoVent-27 | Aerospace
 Edge AI for Digital Twin-Enabled MRO
@@ -81,13 +84,16 @@ The unbroken chain (offline on the Pi):
     -> SENSE + GRADE   "ATA 53, stringer 14, crack 8.0 mm — MAJOR (67% of limit)"
     -> TWIN            "tail VT-AXB, was 6.0 mm last C-check, +2.0 mm; health 33/100"
     -> PREDICT         "remaining useful life ~N flight cycles to the 12 mm SRM limit"
-    -> DECIDE          "PULL INSPECTION FORWARD — growth outruns the calendar interval"
-    -> FLEET BOARD     4 tails ranked: 1 GROUNDED, 2 PULL-FORWARD, 1 SAFE-TO-EXTEND 30k cyc
+    -> PRESCRIBE       "PULL FORWARD" — then a fleet plan under real hangar capacity:
+                       4 tails -> ground 1, service 2, safely defer 1
+    -> PRICE           rupee ledger: downtime recovered + AOG risk avoided - risk carried
+                       = ~Rs 6 Cr NET VALUE this window vs the blind calendar
     -> AGENT           drafts a work order citing SRM 53-xx; certifying staff sign
   Hash-chain logged. Pi in airplane mode. Verdict in seconds.
 
 Not "an AI that spots cracks" — the digital twin that decides, per tail AND across
-the fleet, what to fix, when, on which aircraft, and proves it to the regulator.
+the fleet, what to fix, when, on which aircraft, WHAT IT'S WORTH IN RUPEES, and
+proves it to the regulator. Others detect or dashboard; only we predict, prescribe, price.
 
 ================================================================
 SLIDE 5 — TECHNICAL IMPLEMENTATION
@@ -98,6 +104,11 @@ IMPLEMENTED (this POC):
   defects; condition-based scheduling decision (PULL FORWARD / SAFE TO EXTEND /
   GROUND) quantified against the calendar baseline; FLEET RISK BOARD ranking every
   tail worst-first. (src/l1_twin/twin.py — pure, unit-tested logic.)
+- PRESCRIPTIVE PLANNER + RUPEE LEDGER (the payoff): a capacity-constrained fleet
+  service plan (service highest-risk tails first, defer the healthy, make carried risk
+  explicit when at-risk > hangar slots) with a rupee ledger = downtime recovered + AOG
+  risk avoided - risk carried = net value per window vs the calendar. Every money and
+  capacity constant is in one place and configurable. (src/l1_twin/planner.py, unit-tested.)
 - Twin record: per-tail SQLite store; findings pinned to ATA zone / station / stringer.
 - Sensor (detection/segmentation): YOLO segmentation with SAHI tiling for thin,
   small, high-aspect-ratio cracks (pixel-accurate masks, not coarse boxes).
@@ -148,6 +159,9 @@ MEASURED (POC — insert real numbers on demo day):
 - Detector recall on held-out test folder: [measure]
 - ArUco sizing error vs hand-measured defect: [measure] %
 - On-device / laptop latency per scan: [measure] s   (state CPU vs accelerator)
+- Twin output on the demo fleet (DETERMINISTIC, computed live): net value
+  ~Rs 6 Cr / window vs the calendar under stated constants; twin + planner logic
+  covered by runnable self-checks (python -m src.l1_twin.twin / .planner).
 
 PROJECTED / ILLUSTRATIVE (engineering analysis — to validate, not yet deployed):
 - Detection-capability lever: reducing reliably detected crack size from ~4 mm
@@ -178,15 +192,17 @@ Live / recorded virtual POC — fully offline on the Pi:
      12 mm SRM limit.
   3. Digital twin: tail VT-AXB, ATA 53 / stringer 14; was 6.0 mm last C-check ->
      health drops; remaining useful life ~N cycles to the limit.
-  4. FLEET RISK BOARD (the money shot): four tails ranked worst-first — one GROUNDED
-     (beyond limit), two PULL-FORWARD (growth outruns the calendar), one SAFE-TO-
-     EXTEND 30,000 cycles. Condition-based maintenance on one screen.
-  5. Agent drafts the work order citing SRM 53-xx; certifying engineer signs.
-  6. Tamper demo: edit one audit-log line -> verify() fails. Pi in airplane mode
+  4. FLEET RISK BOARD: four tails ranked worst-first — one GROUNDED (beyond limit),
+     two PULL-FORWARD (growth outruns the calendar), one SAFE-TO-DEFER.
+  5. THE MONEY SHOT — prescriptive plan + rupee ledger: under hangar capacity, "ground
+     1, service 2, safely defer 1 -> ~Rs 6 Cr net value this window vs the calendar."
+     Downtime recovered + AOG risk avoided - risk carried, every constant on screen.
+  6. Agent drafts the work order citing SRM 53-xx; certifying engineer signs.
+  7. Tamper demo: edit one audit-log line -> verify() fails. Pi in airplane mode
      throughout; every step hash-chain logged.
 
-What is real vs roadmap is stated openly — the twin brain, fleet board, sensing,
-sizing, grading, progression, cited work order and audit are demonstrated;
-federation and full certification are the roadmap.
+What is real vs roadmap is stated openly — the twin brain, fleet board, prescriptive
+planner + rupee ledger, sensing, sizing, grading, progression, cited work order and
+audit are demonstrated; federation and full certification are the roadmap.
 
 [Embed: aerotwin_poc_2min.mp4 — see 02_POC_Media/video/]

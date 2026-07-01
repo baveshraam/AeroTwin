@@ -7,6 +7,7 @@ install. Same view either way.
 from __future__ import annotations
 
 from src.l1_twin import db
+from src.l1_twin.planner import fleet_plan, inr
 from src.l1_twin.twin import fleet_summary
 from src.l2_progress.paris import project_growth
 
@@ -25,6 +26,46 @@ def _health_color(health: int, grounded: bool) -> str:
     if health < 70:
         return "#f9a825"
     return "#2e7d32"
+
+
+def _rupees(n: float) -> str:
+    return inr(n).replace("Rs ", "&#8377;")  # rupee symbol in the browser
+
+
+def _plan_panel(res: dict) -> str:
+    """Prescriptive plan + rupee ledger: predict -> prescribe -> price."""
+    lg = res["ledger"]
+    if not res["plan"]:
+        return ""
+    slot_cls = {"scheduled": "s-go", "deferred": "s-def"}
+    rows = "".join(
+        f'<tr><td class="ft-tail">{p["tail"]}</td>'
+        f'<td>{p["health"]}/100</td>'
+        f'<td><span class="slot {slot_cls.get(p["slot"], "s-q")}">{p["slot"]}</span></td>'
+        f'<td>{p["action"]}</td>'
+        f'<td>{_rupees(p["risk"]) if p["risk"] else "&mdash;"}</td></tr>'
+        for p in res["plan"]
+    )
+    carried = (f'<div class="big carried"><b>{_rupees(lg["aog_risk_carried"])}</b>'
+               f'<span>AOG risk carried (add hangar slots)</span></div>'
+               if lg["aog_risk_carried"] else "")
+    return f"""
+    <section class="fleet">
+      <div class="fleet-head">
+        <h2>Prescriptive fleet plan &amp; rupee ledger <span class="sub">predict &rarr; prescribe &rarr; price</span></h2>
+      </div>
+      <div class="ledger">
+        <div class="big net"><b>{_rupees(lg["net_value"])}</b><span>net value this window vs blind calendar</span></div>
+        <div class="big"><b>{_rupees(lg["aog_risk_avoided"])}</b><span>AOG risk avoided (serviced in time)</span></div>
+        <div class="big"><b>{_rupees(lg["downtime_recovered"])}</b><span>downtime recovered ({lg["safely_deferred"]} healthy jet deferred)</span></div>
+        {carried}
+        <div class="big cap"><b>{lg["twin_serviced"]} / {lg["calendar_checks"]}</b><span>jets serviced vs calendar (capacity {lg["capacity"]})</span></div>
+      </div>
+      <table class="fleet-tbl">
+        <tr><th>Tail</th><th>Health</th><th>Slot</th><th>Prescribed action</th><th>AOG risk</th></tr>
+        {rows}
+      </table>
+    </section>"""
 
 
 def _fleet_board(states: list[dict]) -> str:
@@ -140,8 +181,10 @@ def render_home() -> str:
           <table class="hist"><tr><th>Scan</th><th>Cycles</th><th>Size</th><th>Grade</th></tr>{hist_rows}</table>
         </div>""")
 
-    fleet = _fleet_board(fleet_summary())
-    body = fleet + ('<div class="wrap">' + "".join(cards) + '</div>' if cards else
+    states = fleet_summary()
+    plan = _plan_panel(fleet_plan(states)) if states else ""
+    fleet = _fleet_board(states)
+    body = plan + fleet + ('<div class="wrap">' + "".join(cards) + '</div>' if cards else
                     '<p class="empty">No findings yet. Run <code>py -m src.pipeline --seed</code>.</p>')
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <title>AeroTwin-Edge - Structural Twin</title>
@@ -165,6 +208,17 @@ def render_home() -> str:
   .fleet{{padding:20px 28px 4px}}
   .fleet-head{{display:flex;justify-content:space-between;align-items:baseline}}
   .fleet-head h2{{margin:0;font-size:16px}}
+  .fleet-head .sub{{font-size:12px;font-weight:400;color:#5a6b7b;letter-spacing:.3px}}
+  .ledger{{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 4px}}
+  .big{{flex:1;min-width:150px;background:#fff;border-radius:12px;padding:14px 16px;
+        box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:6px solid #cfd8e0}}
+  .big b{{display:block;font-size:22px;line-height:1.1}} .big span{{font-size:11px;color:#5a6b7b}}
+  .big.net{{border-left-color:#2e7d32}} .big.net b{{color:#2e7d32}}
+  .big.carried{{border-left-color:#c62828}} .big.carried b{{color:#c62828}}
+  .big.cap{{border-left-color:#0a2540}}
+  .slot{{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}}
+  .slot.s-go{{background:#e2f0e3;color:#2e7d32}} .slot.s-def{{background:#dfe6ee;color:#37474f}}
+  .slot.s-q{{background:#fde0e0;color:#c62828}}
   .kpis{{display:flex;gap:8px}}
   .kpi{{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:#dfe6ee;color:#37474f}}
   .kpi.red{{background:#fde0e0;color:#c62828}} .kpi.amber{{background:#fdf0d2;color:#8a6100}}

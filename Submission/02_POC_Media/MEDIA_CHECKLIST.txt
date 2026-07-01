@@ -22,17 +22,19 @@ diagrams/   (make in draw.io / Excalidraw / PowerPoint — all free)
 ------------------------------------------------------------------
 screenshots/   (PNG, full-resolution, captured from the REAL demo)
 ------------------------------------------------------------------
-[ ] 01_fleet_risk_board.png     — *** THE HEADLINE IMAGE *** dashboard fleet board:
-                                  4 tails ranked worst-first — 1 GROUNDED, 2 PULL-
-                                  FORWARD, 1 SAFE-TO-EXTEND. From `--seed` + dashboard.
-[ ] 02_tail_twin_card.png       — VT-AXB card: health index, 6.0 -> 8.0 mm history +
+[ ] 01_rupee_ledger_plan.png    — *** THE HEADLINE IMAGE *** prescriptive plan + rupee
+                                  ledger: net value ~Rs 6 Cr/window, AOG risk avoided,
+                                  downtime recovered, + the per-tail service plan.
+[ ] 02_fleet_risk_board.png     — 4 tails ranked worst-first — 1 GROUNDED, 2 PULL-
+                                  FORWARD, 1 SAFE-TO-DEFER. From `--seed` + dashboard.
+[ ] 03_tail_twin_card.png       — VT-AXB card: health index, 6.0 -> 8.0 mm history +
                                   trend, remaining-useful-life to the 12 mm SRM limit.
-[ ] 03_detection_overlay.png    — crack mask + ArUco marker + "8.0 mm" (the sensor).
-[ ] 04_severity_grade.png       — SRM limit-table lookup ("MAJOR — 67% of 12 mm").
-[ ] 05_paris_curve.png          — crack-growth curve crossing the 12 mm limit.
-[ ] 06_agent_workorder.png      — drafted work order citing SRM 53-xx, sign-off pending.
-[ ] 07_audit_tamper.png         — verify()=True, then edit one log line -> verify()=False.
-[ ] 08_pi_offline_terminal.png  — Pi terminal, airplane mode, inference log + timing.
+[ ] 04_detection_overlay.png    — crack mask + ArUco marker + "8.0 mm" (the sensor).
+[ ] 05_severity_grade.png       — SRM limit-table lookup ("MAJOR — 67% of 12 mm").
+[ ] 06_paris_curve.png          — crack-growth curve crossing the 12 mm limit.
+[ ] 07_agent_workorder.png      — drafted work order citing SRM 53-xx, sign-off pending.
+[ ] 08_audit_tamper.png         — verify()=True, then edit one log line -> verify()=False.
+[ ] 09_pi_offline_terminal.png  — Pi terminal, airplane mode, inference log + timing.
 
 ------------------------------------------------------------------
 video/

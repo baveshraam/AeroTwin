@@ -6,23 +6,25 @@ all offline. Real where it's cheap to be real; seeded where real would cost days
 ==================================================================
 THE ONE FEATURE TO NAIL (judges reward this above all)
 ==================================================================
-The TWIN's condition-based DECISION and FLEET RISK BOARD: per-tail health index +
-remaining-useful-life -> "PULL this tail's inspection FORWARD / SAFE TO EXTEND that
-one / GROUND this one", ranked across the fleet against the calendar baseline.
-THAT is the digital twin — the thing a defect detector on its own can never be. The
-sensor chain (px->mm->SRM-grade->cycles-to-limit) is the bridge that feeds it; the
-twin brain is the payoff. If everything else were mocked, the twin turning a fleet
-of findings into a scheduling call still carries the submission.
+PREDICT -> PRESCRIBE -> PRICE. The twin computes each tail's health + remaining-useful-
+life (PREDICT), turns the fleet into a hangar-capacity-constrained service plan
+(PRESCRIBE), and attaches a RUPEE LEDGER = downtime recovered + AOG risk avoided -
+risk carried = net value per window vs the calendar (PRICE). THAT is the digital twin
+as a decision platform — the thing a defect detector, or even a health dashboard, can
+never be. The sensor chain (px->mm->SRM-grade->cycles-to-limit) is the bridge that
+feeds it; the priced fleet plan is the payoff. If everything else were mocked, the twin
+turning a fleet of findings into a rupee-quantified plan still carries the submission.
 
 ==================================================================
 RUN THE REAL REPO (this is what the video shows)
 ==================================================================
-  python -m src.pipeline --seed        # reset + seed a deterministic 4-tail fleet
-  uvicorn src.l1_twin.app:app --port 8000   # -> fleet risk board + per-tail twin
+  python -m src.pipeline --seed        # reset+seed a 4-tail fleet -> prints plan + ledger
+  uvicorn src.l1_twin.app:app --port 8000   # -> rupee ledger + fleet board + per-tail twin
   #   or, zero web stack:  python tools/render_dashboard.py  (static HTML screenshot)
   python -m src.l1_twin.twin           # twin self-check (health/RUL/CBM math)
+  python -m src.l1_twin.planner        # planner self-check (capacity plan + rupee ledger)
   python -m src.pipeline --image panel.jpg --real   # real detector once trained
-The fleet board (1 grounded, 2 pull-forward, 1 safe-to-extend) is the headline image.
+The rupee ledger ("~Rs 6 Cr net value/window") + the fleet board are the headline images.
 
 ==================================================================
 A. REAL CORE  (~4-6 hrs, one ML person)  -> detect_and_size.py

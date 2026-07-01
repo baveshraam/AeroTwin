@@ -35,8 +35,12 @@ hero — this is where the demo wins.**
 - [ ] **B1** Polish `src/l1_twin/view.py` — the **fleet risk board** is the money shot;
       make it screen-record-ready (it already ranks tails + shows the CBM call).
 - [ ] **B2** Calibrate `src/l1_twin/twin.py` constants (`CALENDAR_INTERVAL_CYCLES`,
-      `DTA_INSPECT_FRACTION`) + `src/l2_progress/paris.py` so the pull-forward / extend
+      `DTA_INSPECT_FRACTION`) + `src/l2_progress/paris.py` so the pull-forward / defer
       calls are sane and defensible. Keep `python -m src.l1_twin.twin` (self-check) green.
+- [ ] **B2b** Calibrate `src/l1_twin/planner.py` economics (`DOWNTIME_COST_PER_CHECK`,
+      `AOG_EVENT_COST`, `HANGAR_CAPACITY`) to real operator numbers so the **rupee ledger**
+      holds up under Q&A. Keep `python -m src.l1_twin.planner` (self-check) green. This is
+      the money slide — have a one-line source for every constant.
 - [ ] **B3** Upgrade `src/l3_agent/agent.py` to a local LLM (Ollama phi3/qwen) over the
       manual corpus, keeping the **citation-required guardrail** + human gate.
 - [ ] **B4** Confirm `src/l3_agent/audit.py verify()` stays true; show a tamper demo

@@ -20,6 +20,17 @@
   .fleet{padding:20px 28px 4px}
   .fleet-head{display:flex;justify-content:space-between;align-items:baseline}
   .fleet-head h2{margin:0;font-size:16px}
+  .fleet-head .sub{font-size:12px;font-weight:400;color:#5a6b7b;letter-spacing:.3px}
+  .ledger{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 4px}
+  .big{flex:1;min-width:150px;background:#fff;border-radius:12px;padding:14px 16px;
+        box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:6px solid #cfd8e0}
+  .big b{display:block;font-size:22px;line-height:1.1} .big span{font-size:11px;color:#5a6b7b}
+  .big.net{border-left-color:#2e7d32} .big.net b{color:#2e7d32}
+  .big.carried{border-left-color:#c62828} .big.carried b{color:#c62828}
+  .big.cap{border-left-color:#0a2540}
+  .slot{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+  .slot.s-go{background:#e2f0e3;color:#2e7d32} .slot.s-def{background:#dfe6ee;color:#37474f}
+  .slot.s-q{background:#fde0e0;color:#c62828}
   .kpis{display:flex;gap:8px}
   .kpi{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:#dfe6ee;color:#37474f}
   .kpi.red{background:#fde0e0;color:#c62828} .kpi.amber{background:#fdf0d2;color:#8a6100}
@@ -38,6 +49,22 @@
   <header><h1>AeroTwin-Edge &middot; Digital Twin for Condition-Based MRO</h1>
   <p>Offline edge structural twin &middot; per-tail &amp; per-fleet &middot; condition-based scheduling &middot; audit-ready</p></header>
   
+    <section class="fleet">
+      <div class="fleet-head">
+        <h2>Prescriptive fleet plan &amp; rupee ledger <span class="sub">predict &rarr; prescribe &rarr; price</span></h2>
+      </div>
+      <div class="ledger">
+        <div class="big net"><b>&#8377;6.12 Cr</b><span>net value this window vs blind calendar</span></div>
+        <div class="big"><b>&#8377;6.00 Cr</b><span>AOG risk avoided (serviced in time)</span></div>
+        <div class="big"><b>&#8377;12.0 L</b><span>downtime recovered (1 healthy jet deferred)</span></div>
+        
+        <div class="big cap"><b>3 / 4</b><span>jets serviced vs calendar (capacity 3)</span></div>
+      </div>
+      <table class="fleet-tbl">
+        <tr><th>Tail</th><th>Health</th><th>Slot</th><th>Prescribed action</th><th>AOG risk</th></tr>
+        <tr><td class="ft-tail">VT-AXE</td><td>0/100</td><td><span class="slot s-go">scheduled</span></td><td>SERVICE NOW - grounded, beyond limit</td><td>&#8377;2.00 Cr</td></tr><tr><td class="ft-tail">VT-AXD</td><td>12/100</td><td><span class="slot s-go">scheduled</span></td><td>SERVICE THIS WINDOW - growth outruns the calendar</td><td>&#8377;2.00 Cr</td></tr><tr><td class="ft-tail">VT-AXB</td><td>33/100</td><td><span class="slot s-go">scheduled</span></td><td>SERVICE THIS WINDOW - growth outruns the calendar</td><td>&#8377;2.00 Cr</td></tr><tr><td class="ft-tail">VT-AXC</td><td>75/100</td><td><span class="slot s-def">deferred</span></td><td>SAFE TO DEFER - healthier than the calendar assumes</td><td>&mdash;</td></tr>
+      </table>
+    </section>
     <section class="fleet">
       <div class="fleet-head">
         <h2>Fleet risk board</h2>

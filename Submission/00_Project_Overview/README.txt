@@ -3,12 +3,13 @@ Problem statement: EDGE AI FOR DIGITAL TWIN-ENABLED MRO
 Stage 2 — Virtual Proof of Concept submission
 
 ONE-LINE PITCH
-A fully-offline, per-tail-AND-per-fleet structural DIGITAL TWIN on a Raspberry Pi 5.
-It turns every inspection into a condition record, scores each aircraft's structural
-health, predicts remaining useful life in flight cycles, and tells the planner which
-tails to PULL FORWARD and which are SAFE TO DEFER — replacing blind calendar checks
-with condition-based maintenance (CBM+). Defect detection is the sensor; the twin is
-the product. Zero raw imagery ever leaves the secure site.
+AeroTwin-Edge — the Rs 10,000 box that decides which jet to ground and which to fly.
+A fully-offline, per-tail-AND-per-fleet structural DIGITAL TWIN on a Raspberry Pi 5
+that goes PREDICT -> PRESCRIBE -> PRICE: it turns every inspection into a condition
+record, PREDICTS each aircraft's remaining useful life, PRESCRIBES a hangar-capacity-
+constrained fleet maintenance plan (which tails to service, defer, or ground), and
+PRICES every decision in rupees against the blind calendar. Defect detection is the
+sensor; the priced fleet plan is the payoff. Zero raw imagery leaves the secure site.
 
 WHY IT MATTERS (the real problem we solve)
 Fleets are maintained on a fixed CALENDAR interval, which over-maintains the healthy
@@ -20,8 +21,11 @@ hangars). AeroTwin-Edge is that missing system-of-record.
 WHAT IS REAL vs ROADMAP (read this first — we are explicit about scope)
 REAL in this POC:
   - the TWIN BRAIN: per-tail health index (0-100), remaining-useful-life in cycles,
-    condition-based scheduling call (PULL FORWARD / SAFE TO EXTEND / GROUND) vs the
+    condition-based scheduling call (PULL FORWARD / SAFE TO DEFER / GROUND) vs the
     calendar baseline, and a FLEET RISK BOARD ranking every tail worst-first
+  - the PRESCRIPTIVE PLANNER + RUPEE LEDGER: a hangar-capacity-constrained fleet
+    service plan priced in rupees vs the calendar (downtime recovered + AOG risk
+    avoided - risk carried = net value per window); every constant explicit
   - crack detection + segmentation (YOLO-seg) as the sensor
   - ArUco fiducial -> millimetre sizing -> SRM allowable-limit grading
   - Paris-law / empirical crack-growth projection (illustrative constants)

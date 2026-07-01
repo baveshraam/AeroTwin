@@ -42,9 +42,11 @@ the deeper working notes behind these answers.)
 ----------------------------------------------------------------------
 Q42. PROJECT TITLE
 ----------------------------------------------------------------------
-AeroTwin-Edge: an offline, per tail and per fleet structural digital twin for
-condition based aircraft maintenance (MRO) at the edge, with predictive remaining
-useful life, agentic manual cited work orders and federated fleet learning
+AeroTwin-Edge: the offline digital twin that decides which aircraft to ground and
+which to fly. A per tail and per fleet structural digital twin on a Raspberry Pi that
+goes predict, prescribe, price, forecasting each defect remaining useful life,
+prescribing a hangar capacity constrained fleet maintenance plan, and pricing every
+decision in rupees against the blind calendar, fully offline and audit proof.
 
 ----------------------------------------------------------------------
 Q43. PROJECT CATEGORY
@@ -100,8 +102,17 @@ issues a condition based scheduling decision, namely to pull an inspection forwa
 fast growing defect, to safely extend it on a healthy structure, or to ground a tail
 whose damage is beyond limit, each quantified against the calendar baseline. these
 states are aggregated into a fleet risk board that ranks every tail worst first, so a
-planner sees at a glance which aircraft needs attention and which is safe to defer. the
-defect detector is one sensor feeding this twin, and it uses unsupervised anomaly
+planner sees at a glance which aircraft needs attention and which is safe to defer.
+crucially the twin does not stop at prediction, it prescribes and prices. under a
+realistic hangar capacity constraint it produces an optimised service plan, servicing
+the highest risk tails first, deferring the healthy, and making explicit the residual
+risk carried when the number of at risk aircraft exceeds available slots. it attaches a
+rupee ledger to that plan, namely the downtime recovered by deferring unnecessary checks
+plus the aircraft on ground risk avoided by servicing fast growing defects in time, less
+any risk carried, expressed as a net value per planning window against the calendar
+baseline, with every monetary constant explicit and configurable so the figure is
+defensible rather than asserted. the defect detector is one sensor feeding this twin,
+and it uses unsupervised anomaly
 detection alongside supervised segmentation so that it is not dependent on large
 labelled datasets, which are inherently scarce in aerospace. an agentic assistant then
 retrieves the governing AMM and SRM provisions and prepares the corresponding work
@@ -133,9 +144,11 @@ estimated using a Paris law fatigue crack growth formulation together with an
 empirical two scan growth rate. on top of this the digital twin layer computes, from
 the per tail record, a structural health index, a remaining useful life in flight
 cycles, and a condition based scheduling decision quantified against the calendar
-baseline, and aggregates every tail into a fleet risk board ranked worst first; this
-twin logic is deterministic and unit tested, and is the core of the solution while
-detection is treated as an interchangeable sensor. the agentic layer
+baseline, and aggregates every tail into a fleet risk board ranked worst first, and then
+solves a capacity constrained fleet service plan with a rupee ledger attached, so the
+output is not a prediction but a priced decision; this twin and planner logic is
+deterministic and unit tested, and is the core of the solution while detection is
+treated as an interchangeable sensor. the agentic layer
 employs a local quantized LLM with retrieval augmented generation over a controlled
 AMM and SRM corpus, constrained by citation required guardrails to prevent
 unsupported determinations. federated learning is implemented using Flower with
@@ -154,12 +167,17 @@ Hybrid AI / Combination of multiple AI approaches
 ----------------------------------------------------------------------
 Q49. KEY BENEFITS AND IMPACT (IN NUMBERS)
 ----------------------------------------------------------------------
-the project delivers measurable operational, economic and safety benefits. aircraft
-on ground time is estimated at approximately rupees 8 lakh to 1.25 crore per hour,
-and a single avoided ground day represents savings in the region of rupees 2 crore,
-so the system can recover its cost on a single prevented event while operating on
-edge hardware costing approximately rupees 10,000 with no recurring cloud
-expenditure. the principal long term benefit derives from improved detection
+the project delivers measurable operational, economic and safety benefits, and it
+quantifies them itself. the twin prices each planning window against the blind
+calendar as downtime recovered by deferring unnecessary checks on healthy aircraft,
+plus aircraft on ground risk avoided by servicing fast growing defects in time, less
+any risk carried when at risk aircraft exceed hangar capacity. on the four tail
+demonstration fleet this net value is of the order of several crore rupees per window
+under explicit, configurable assumptions. the underlying anchors are that aircraft on
+ground time is estimated at approximately rupees 8 lakh to 1.25 crore per hour, that a
+single avoided ground day represents savings in the region of rupees 2 crore, so the
+system can recover its cost on a single prevented event while operating on edge
+hardware costing approximately rupees 10,000 with no recurring cloud expenditure. the principal long term benefit derives from improved detection
 capability. reducing the smallest reliably detected defect from approximately 4mm to
 approximately 2mm, when applied within established damage tolerance analysis, can
 approximately double the safe interval between inspections, which an operator may
@@ -245,11 +263,13 @@ constitutes the novelty and the differentiation of the project.
 ================================================================================
 0. ONE-LINE PITCH
 ================================================================================
-A fully-offline structural DIGITAL TWIN for an aircraft fleet, running on a
-Raspberry Pi 5. It grows a living per-tail condition record, scores each aircraft's
-structural health, predicts remaining useful life to the structural-repair-manual
-limit, and drives the maintenance decision -- pull this tail's check forward, safely
-extend that one, ground the beyond-limit one -- ranking the whole fleet worst-first.
+A fully-offline structural DIGITAL TWIN for an aircraft fleet, on a Raspberry Pi 5,
+that goes PREDICT -> PRESCRIBE -> PRICE. It grows a living per-tail condition record,
+scores each aircraft's structural health and PREDICTS remaining useful life to the
+structural-repair-manual limit; it PRESCRIBES a maintenance plan across the fleet under
+real hangar capacity -- pull this tail forward, safely defer that one, ground the
+beyond-limit one, ranked worst-first; and it PRICES every call in rupees against the
+blind calendar (downtime recovered + AOG risk avoided - risk carried = net value).
 Defect detection is the sensor that feeds it; an agentic MRO copilot drafts the
 manual-cited work order for a human to sign; the fleet improves through federated
 learning, with zero raw imagery ever leaving the secure site.
@@ -607,7 +627,10 @@ THE UNBROKEN CHAIN (offline on the Pi -- sense, twin, predict, DECIDE, fleet, ag
      -> TWIN                    ("tail VT-AXB, was 6.0 mm last check, +2 mm; health 33/100")
      -> PREDICT                ("remaining useful life ~N flight cycles to the 12 mm limit")
      -> DECIDE                 ("PULL INSPECTION FORWARD -- growth outruns the calendar")
-     -> FLEET BOARD            (4 tails ranked: 1 grounded, 2 pull-forward, 1 safe-to-extend)
+     -> FLEET BOARD            (4 tails ranked: 1 grounded, 2 pull-forward, 1 safe-to-defer)
+     -> PLAN + RUPEE LEDGER    ("ground 1, service 2, defer 1 -> ~Rs 6 Cr net value this
+                                window vs the calendar" = downtime recovered + AOG risk
+                                avoided - risk carried; every constant explicit)
      -> AGENT                  drafts signed work order citing SRM 53-xx, asks
                                 certifying staff to accept
    Pi in airplane mode; latency on screen; every step hash-chain logged.

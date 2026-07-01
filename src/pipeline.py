@@ -147,6 +147,10 @@ def seed_demo() -> None:
     _seed_scan("VT-AXD", "corrosion", "53", "lap joint 22", mask_px=280.0, cycles=12000, date="2026-07-01")
     # VT-AXE — beyond limit: 13.0 mm crack past the 12 mm SRM limit -> grounded.
     _seed_scan("VT-AXE", "crack", "53", "stringer 14", mask_px=520.0, cycles=12000, date="2026-07-01")
+
+    from src.l1_twin.planner import fleet_plan, print_plan
+    print()
+    print_plan(fleet_plan())
     print("\nDone. Start the dashboard:  uvicorn src.l1_twin.app:app --port 8000")
 
 

@@ -13,10 +13,14 @@ TECHNICAL IMPLEMENTATION
 Describe the real architecture, then give a clear REAL vs ROADMAP split.
 
 IMPLEMENTED (POC, demonstrably runs):
-- TWIN BRAIN (the hero): per-tail health index (0-100), remaining-useful-life in
-  cycles, condition-based scheduling call (PULL FORWARD / SAFE TO EXTEND / GROUND)
-  vs the calendar, and a FLEET RISK BOARD ranking all tails worst-first
-  (src/l1_twin/twin.py, with a unit self-check: python -m src.l1_twin.twin)
+- TWIN BRAIN (predict + prescribe): per-tail health index (0-100), remaining-useful-
+  life in cycles, condition-based scheduling call (PULL FORWARD / SAFE TO DEFER /
+  GROUND) vs the calendar, and a FLEET RISK BOARD ranking all tails worst-first
+  (src/l1_twin/twin.py, self-check: python -m src.l1_twin.twin)
+- PRESCRIPTIVE PLANNER + RUPEE LEDGER (price, the payoff): capacity-constrained fleet
+  service plan + net value per window vs the calendar (downtime recovered + AOG risk
+  avoided - risk carried), all constants explicit (src/l1_twin/planner.py, self-check:
+  python -m src.l1_twin.planner). This is what turns a dashboard into a decision platform.
 - YOLO detection + segmentation (SAHI tiling for thin cracks) — the SENSOR
 - OpenCV + ArUco px->mm sizing
 - Configurable SRM allowable-damage-limit table (srm_limits.csv)
