@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import argparse
 
-from src.l0_detect.detect import detect_defects
+from src.l0_detect.detect import WEIGHTS, detect_defects
 from src.l0_detect.grade import grade_defect
 from src.l0_detect.sizing import mm_per_pixel, measure_mm
 from src.l1_twin import db
@@ -59,6 +59,13 @@ def run_scan(
     db.init()
 
     # ---- L0: detect + size + grade ----
+    # Honesty: the real YOLO path only runs when a model is asked for, exists, and
+    # has an image. Otherwise we fall back to the mock — and label it as such, so a
+    # `--real` run with no weights is never passed off as a real inference.
+    used_real = (not mock) and image_path is not None and WEIGHTS.exists()
+    if not mock and not used_real and detections is None and not quiet:
+        why = "no image given" if image_path is None else f"no weights at {WEIGHTS}"
+        print(f"[L0] --real requested but {why}; falling back to MOCK detector")
     if detections is None:
         detections = detect_defects(image_path, mock=mock)
     if not detections:
@@ -92,7 +99,7 @@ def run_scan(
         "defect_type": d["defect_type"], "size_mm": size_mm,
         "grade": grade["grade"], "airworthiness": grade["airworthiness"],
         "scan_date": scan_date, "cycles": cycles, "cycles_to_limit": ctl,
-        "confidence": d["confidence"], "model_version": "mock-v0" if mock else "yolov8-seg",
+        "confidence": d["confidence"], "model_version": "yolov8-seg" if used_real else "mock-v0",
     }
     db.add_finding(finding)
 

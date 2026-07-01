@@ -8,8 +8,13 @@ the deck before you install the web stack.
 """
 from __future__ import annotations
 
+import sys
 import webbrowser
 from pathlib import Path
+
+# Allow running as a plain script (`py tools/render_dashboard.py`): put the repo
+# root on sys.path so the `src` package imports the same as `py -m`.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.l1_twin.view import render_home
 

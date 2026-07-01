@@ -41,16 +41,25 @@ def append(payload: dict) -> dict:
 
 
 def verify() -> bool:
-    """Re-walk the chain and confirm no entry has been tampered with."""
+    """Re-walk the chain and confirm no entry has been tampered with.
+
+    Fails safe: any malformed/corrupted line (tampering can also break the JSON,
+    not just the hash) is treated as a broken chain, returning False rather than
+    raising — so a live tamper demo always shows a clean True/False, never a crash.
+    """
     if not LOG.exists():
         return True
+    # utf-8-sig tolerates a stray BOM if the log was edited in a Windows tool.
     prev = GENESIS
-    for line in LOG.read_text(encoding="utf-8").splitlines():
+    for line in LOG.read_text(encoding="utf-8-sig").splitlines():
         if not line.strip():
             continue
-        entry = json.loads(line)
-        body = json.dumps(entry["payload"], sort_keys=True)
-        if entry["prev"] != prev or entry["hash"] != _hash(prev, body):
+        try:
+            entry = json.loads(line)
+            body = json.dumps(entry["payload"], sort_keys=True)
+            if entry["prev"] != prev or entry["hash"] != _hash(prev, body):
+                return False
+            prev = entry["hash"]
+        except (ValueError, KeyError, TypeError):
             return False
-        prev = entry["hash"]
     return True

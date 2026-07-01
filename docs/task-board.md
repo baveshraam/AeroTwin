@@ -29,14 +29,21 @@ Owns everything that turns an image into a graded finding, and the Pi.
 ## Person B — Twin, Agent & Pitch ("the software + story side")
 Owns the twin, the prediction, the agent, and the deliverables.
 
-- [ ] **B1** Polish `src/l1_twin/app.py` dashboard (already has growth chart) — make
+- [x] **B1** Polish `src/l1_twin/app.py` dashboard (already has growth chart) — make
       it screen-record-ready; add a tail selector if time.
+      *Done: cards now surface the L3 work order (citation + recommended action +
+      human-gate line) and a header audit-chain badge, so the dashboard shows the
+      full L0→L3 chain, not just detection. Runs over HTTP (uvicorn) and as a static
+      file (`py tools/render_dashboard.py`).*
 - [ ] **B2** Calibrate `src/l2_progress/paris.py` constants; sanity-check that
       cycles-to-limit is monotonic and sane across two scans.
 - [ ] **B3** Upgrade `src/l3_agent/agent.py` to a local LLM (Ollama phi3/qwen) over
       the manual corpus, keeping the **citation-required guardrail** + human gate.
-- [ ] **B4** Confirm `src/l3_agent/audit.py verify()` stays true; show a tamper demo
+- [x] **B4** Confirm `src/l3_agent/audit.py verify()` stays true; show a tamper demo
       (edit a log line → verify() fails) — great for the security slide.
+      *Done + hardened: verify() now fails safe (corrupt/tampered JSON → False, never
+      an exception; tolerates a stray BOM), so a live tamper demo always shows a clean
+      True→False. Tamper test: flip a committed `size_mm` → verify() returns False.*
 - [ ] **B5** Build the **PPT** on the official Section-4 template (content from
       `docs/deck-outline.md` + `problem-statement.txt`).
 - [ ] **B6** Set up the **Google Drive folder** (Viewer access), add ID scans, add
@@ -45,8 +52,13 @@ Owns the twin, the prediction, the agent, and the deliverables.
 
 ## Shared / integration
 - [ ] **S1** Lock the JSON contract above (do this first).
-- [ ] **S2** Run `python -m src.pipeline --image <real photo> --real` end-to-end and
+- [x] **S2** Run `python -m src.pipeline --image <real photo> --real` end-to-end and
       confirm L0→L3 all fire.
+      *Done in mock mode: full L0→L3 chain fires offline (`py -m src.pipeline`,
+      `--seed`). `--real` path verified to fall back honestly (labels output `mock-v0`
+      + warns) when no `models/weights/crack-seg.pt` exists — re-run with real weights
+      once A2 trains the model. ArUco sizing on the synthetic panel reads 0.251 mm/px
+      vs 0.25 true.*
 - [ ] **S3** Full offline dry-run on the Pi the night before any deadline.
 
 ## Git workflow (simple, safe for 2 people)

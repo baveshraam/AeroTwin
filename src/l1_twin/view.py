@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from src.l1_twin import db
 from src.l2_progress.paris import project_growth
+from src.l3_agent import audit
+from src.l3_agent.agent import draft_work_order
 
 GRADE_COLOR = {
     "minor": "#2e7d32",
@@ -18,12 +20,31 @@ GRADE_COLOR = {
 }
 
 
+def _grade_for(row: dict) -> dict:
+    from src.l0_detect.grade import grade_defect
+    return grade_defect(row["defect_type"], row["ata_zone"], row["size_mm"])
+
+
 def _limit_from_grade(row: dict) -> float | None:
     try:
-        from src.l0_detect.grade import grade_defect
-        return grade_defect(row["defect_type"], row["ata_zone"], row["size_mm"]).get("limit_mm")
+        return _grade_for(row).get("limit_mm")
     except Exception:
         return None
+
+
+def _work_order_for(row: dict) -> dict:
+    """Regenerate L3's deterministic work order for the latest finding so the
+    dashboard reflects the whole L0->L3 chain, not just detection + twin."""
+    try:
+        grade = _grade_for(row)
+        ctl = row.get("cycles_to_limit")
+        progression = (
+            f"crosses {grade['limit_mm']} mm SRM limit in ~{ctl} cycles"
+            if ctl and grade.get("limit_mm") else "insufficient data for progression"
+        )
+        return draft_work_order(row, grade, progression)
+    except Exception:
+        return {"status": "ESCALATE", "reason": "Could not draft — escalate to certifying staff."}
 
 
 def _sparkline(points: list[tuple[int, float]], limit_mm: float | None, w: int = 240, h: int = 64) -> str:
@@ -77,6 +98,22 @@ def render_home() -> str:
             f'<td>{it["size_mm"]} mm</td><td>{it["grade"]}</td></tr>'
             for it in items
         )
+        wo = _work_order_for(latest)
+        if wo.get("status") == "DRAFT_FOR_SIGNOFF":
+            wo_html = (
+                f'<div class="wo"><div class="wo-head">'
+                f'<span class="wo-tag draft">L3 · WORK ORDER — DRAFT</span>'
+                f'<span class="wo-cite">cites {wo["citation"]}</span></div>'
+                f'<div class="wo-act">{wo["recommended_action"]}</div>'
+                f'<div class="wo-gate">⚖ Awaiting certifying-staff (Part 145) signature — decision support only</div>'
+                f'</div>'
+            )
+        else:
+            wo_html = (
+                f'<div class="wo"><div class="wo-head">'
+                f'<span class="wo-tag esc">L3 · ESCALATE</span></div>'
+                f'<div class="wo-act">{wo.get("reason", "Routed to certifying staff.")}</div></div>'
+            )
         cards.append(f"""
         <div class="card">
           <div class="head" style="border-left:6px solid {color}">
@@ -90,10 +127,21 @@ def render_home() -> str:
             {_sparkline(pts, _limit_from_grade(latest))}
           </div>
           <div class="air">{latest['airworthiness'] or ''}</div>
+          {wo_html}
           <table class="hist"><tr><th>Scan</th><th>Cycles</th><th>Size</th><th>Grade</th></tr>{hist_rows}</table>
         </div>""")
 
     body = "".join(cards) or '<p class="empty">No findings yet. Run <code>py -m src.pipeline --seed</code>.</p>'
+    n_decisions = (
+        sum(1 for ln in audit.LOG.read_text(encoding="utf-8-sig").splitlines() if ln.strip())
+        if audit.LOG.exists() else 0
+    )
+    chain_ok = audit.verify()
+    audit_badge = (
+        f'<span class="audit ok">🔒 audit chain verified · {n_decisions} decisions logged</span>'
+        if chain_ok else
+        '<span class="audit bad">⚠ AUDIT CHAIN BROKEN — tamper detected</span>'
+    )
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <title>AeroTwin-Edge - Structural Twin</title>
 <style>
@@ -110,12 +158,22 @@ def render_home() -> str:
   .body{{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:6px 16px 12px}}
   .metric{{display:flex;flex-direction:column}} .metric b{{font-size:16px}} .metric span{{font-size:11px;color:#5a6b7b}}
   .air{{padding:8px 16px;font-size:12px;color:#37474f;background:#f7f9fb}}
+  .wo{{padding:10px 16px;border-top:1px solid #eef2f6}}
+  .wo-head{{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}}
+  .wo-tag{{font-size:10px;font-weight:700;letter-spacing:.4px;padding:3px 8px;border-radius:4px}}
+  .wo-tag.draft{{background:#e3f2fd;color:#1565c0}} .wo-tag.esc{{background:#fff3e0;color:#e65100}}
+  .wo-cite{{font-size:11px;color:#5a6b7b;font-family:ui-monospace,Consolas,monospace}}
+  .wo-act{{font-size:12.5px;color:#0a2540;margin-top:6px}}
+  .wo-gate{{font-size:10.5px;color:#78909c;margin-top:5px}}
   table.hist{{width:100%;border-collapse:collapse;font-size:12px}}
   table.hist th,table.hist td{{border-top:1px solid #eee;padding:6px 16px;text-align:left}}
   .empty{{padding:40px;text-align:center;color:#5a6b7b}}
+  .audit{{display:inline-block;margin-top:8px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px}}
+  .audit.ok{{background:#123a1e;color:#8be0a2}} .audit.bad{{background:#4a1414;color:#ff8a80}}
 </style></head>
 <body>
   <header><h1>AeroTwin-Edge &middot; Per-Tail Structural Twin</h1>
-  <p>Offline edge inspection &middot; condition-based maintenance &middot; audit-ready</p></header>
+  <p>Offline edge inspection &middot; condition-based maintenance &middot; audit-ready</p>
+  {audit_badge}</header>
   <div class="wrap">{body}</div>
 </body></html>"""
