@@ -71,6 +71,18 @@ def run_scan(
     size_mm = measure_mm(d["mask_length_px"], scale)
     grade = grade_defect(d["defect_type"], ata_zone, size_mm)
 
+    # ---- L0b: zero-label anomaly branch — flags never-seen damage the detector wasn't
+    # trained on. Only on real imagery, only if a normal-skin memory bank has been fit. ----
+    anomaly = None
+    if image_path and not mock:
+        try:
+            from src.l0_detect.anomaly import PatchCore, BANK_PATH
+            if BANK_PATH.exists():
+                a = PatchCore.load().score(image_path)
+                anomaly = {"score": round(a["score"], 3), "is_anomaly": a["is_anomaly"]}
+        except Exception:
+            anomaly = None
+
     # ---- L1: twin history, then persist ----
     hist = db.history(tail, location, d["defect_type"])
 
@@ -114,6 +126,9 @@ def run_scan(
                   f"-> now {size_mm} mm ({'+' if delta >= 0 else ''}{delta})")
         else:
             print(f"[L1] tail {tail}: first recorded scan of this defect")
+        if anomaly is not None:
+            flag = "ANOMALY" if anomaly["is_anomaly"] else "nominal"
+            print(f"[L0b] zero-label anomaly: {flag} (score {anomaly['score']})")
         print(f"[L2] {progression}")
         print(f"[TWIN] {tail} health {state['health']}/100 "
               f"({state['open_defects']} open) -> {state['basis'].upper()}: {state['action']}")
@@ -124,7 +139,7 @@ def run_scan(
               f"(awaiting certifying-staff signature)")
 
     return {"finding": finding, "grade": grade, "twin": state,
-            "work_order": work_order, "audit": entry}
+            "work_order": work_order, "audit": entry, "anomaly": anomaly}
 
 
 def seed_demo() -> None:

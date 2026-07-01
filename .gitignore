@@ -18,6 +18,11 @@ data/twin.db
 data/runs/
 data/raw/
 
+# Downloaded/regenerable ML datasets + training run artifacts — re-fetch with
+# tools/fetch_datasets.py / regenerate with tools/train.py instead of pushing
+data/datasets/
+runs/
+
 # Media is big — keep demo media in Google Drive, not git
 *.mp4
 *.mov

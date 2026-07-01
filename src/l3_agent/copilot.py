@@ -85,12 +85,69 @@ def _chat(messages: list[dict], tools: list | None = None) -> dict:
         return json.loads(r.read())["message"]
 
 
+def _offline_agent(question: str) -> dict:
+    """Deterministic tool-router used when no LLM is present: parse intent + entities,
+    actually CALL the twin tools, and return a real answer with a populated trace. Not a
+    language model — but genuine agentic tool-use, so the offline demo still shows it work."""
+    import re
+    q = question.lower()
+    trace: list[dict] = []
+
+    def run(name, **kw):
+        res = TOOLS[name](**kw)
+        trace.append({"tool": name, "args": kw, "result": res})
+        return res
+
+    dtype = next((d for d in ("crack", "corrosion", "dent", "scratch") if d in q), None)
+    ata = (re.search(r"ata[^\d]*(\d{1,3})", q) or re.search(r"zone[^\d]*(\d{1,3})", q))
+    ata = ata.group(1) if ata else "53"
+    mm = [float(x) for x in re.findall(r"(\d+(?:\.\d+)?)\s*mm", q)]
+    tail = re.search(r"\bvt[-\s]?([a-z]{2,3})\b", q)
+
+    # tail-state intent
+    if tail or "health" in q or "state of" in q or "grounded" in q:
+        t = ("VT-" + tail.group(1).upper()) if tail else None
+        if t:
+            s = run("get_tail_state", tail=t)
+            if "error" in s:
+                return {"answer": s["error"], "tool_trace": trace, "llm": False}
+            ans = (f"{t}: health {s.get('health')}/100, {s.get('open_defects')} open defect(s). "
+                   f"{s.get('action','')}")
+            return {"answer": ans, "tool_trace": trace, "llm": False}
+
+    # RUL intent
+    if any(k in q for k in ("rul", "remaining", "life", "cycles to", "how long", "how many cycles")):
+        size = mm[0] if mm else None
+        limit = mm[1] if len(mm) > 1 else None
+        if limit is None and dtype:
+            lim = run("get_srm_limit", defect_type=dtype, ata_zone=ata)
+            limit = lim.get("limit_mm")
+        if size is not None and limit:
+            b = run("get_rul", size_mm=size, limit_mm=limit)
+            ans = (f"A {size} mm {dtype or 'defect'} against a {limit} mm limit: Monte-Carlo RUL "
+                   f"P10 {b['p10']:,} · P50 {b['p50']:,} · P90 {b['p90']:,} cycles "
+                   f"(schedule on P10, the conservative estimate).")
+            return {"answer": ans, "tool_trace": trace, "llm": False}
+
+    # SRM-limit intent (default for limit questions)
+    if dtype or "limit" in q or "srm" in q:
+        dt = dtype or "crack"
+        lim = run("get_srm_limit", defect_type=dt, ata_zone=ata)
+        if lim.get("limit_mm") is None:
+            return {"answer": f"No SRM entry for {dt} at ATA {ata}.", "tool_trace": trace, "llm": False}
+        ans = (f"SRM allowable-damage limit for a {dt} at ATA {ata}: {lim['limit_mm']} mm "
+               f"(ref {lim['manual_ref']}). Beyond it the structure is not airworthy.")
+        return {"answer": ans, "tool_trace": trace, "llm": False}
+
+    return {"answer": "Ask about an SRM limit, an RUL (size + limit), or a tail's state "
+            "(e.g. 'state of VT-AXB').", "tool_trace": trace, "llm": False}
+
+
 def ask(question: str, max_steps: int = 4) -> dict:
-    """Answer an MRO question, letting the model call twin tools. Deterministic fallback
-    (a direct tool call) when no Ollama is present, so this always returns something."""
+    """Answer an MRO question, letting the model call twin tools. When no Ollama is present,
+    a deterministic tool-router still executes the real tools (agentic, just not prose)."""
     if not ollama_up():
-        return {"answer": "(LLM offline) start Ollama for prose answers; tools still work.",
-                "tool_trace": [], "llm": False}
+        return _offline_agent(question)
     messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": question}]
     trace = []
     for _ in range(max_steps):
