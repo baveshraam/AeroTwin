@@ -62,15 +62,22 @@ python -m src.pipeline
 # 2) Seed a 4-tail fleet -> prints the prescriptive plan + rupee ledger
 python -m src.pipeline --seed
 
-# 3) Open the dashboard: rupee ledger + fleet risk board + per-tail growth
-uvicorn src.l1_twin.app:app --port 8000        # -> http://127.0.0.1:8000
-python tools/render_dashboard.py               # ...or static HTML, zero web stack
+# 3) Open the 3D digital twin: orbitable aircraft shaded by health, clickable defect
+#    hotspots (RUL P10/P50/P90 bands), a time-scrub that grows cracks and grounds jets
+#    live, fleet strip, rupee ledger, and edge telemetry HUD.
+python tools/vendor_three.py                   # once, online: vendors Three.js -> then offline forever
+uvicorn src.l1_twin.app:app --port 8000        # -> http://127.0.0.1:8000  (classic view at /classic)
 
 # 4) The twin's decision + money math in isolation (self-checks)
 python -m src.l1_twin.twin                      # health / RUL / condition-based call
 python -m src.l1_twin.planner                   # capacity-constrained plan + ₹ ledger
 
-# 5) Make a synthetic test panel (ArUco marker + crack) for real mm-sizing
+# 5) Get real training data + train the detector (see the dataset hunt below)
+python tools/fetch_datasets.py --list          # ranked real datasets + how to pull each
+python tools/train.py --stage base             # YOLOv8-seg on the public crack corpus
+python tools/train.py --stage adapt --data data/datasets/aircraft/data.yaml   # aircraft fine-tune
+
+# 6) Make a synthetic test panel (ArUco marker + crack) for real mm-sizing
 python tools/make_demo_panel.py
 ```
 
