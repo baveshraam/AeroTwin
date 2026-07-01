@@ -101,17 +101,21 @@ detector later, one piece at a time.
 ```
 src/
   l0_detect/   detect.py · sizing.py (ArUco) · grade.py (SRM limits)   ← the SENSOR
-  l1_twin/     db.py (record) · twin.py (health/RUL/fleet/CBM)         ← THE TWIN
-               planner.py (capacity-constrained plan + rupee ledger)   ← THE PAYOFF
-               app.py + view.py (dashboard: ledger + risk board + growth)
-  l2_progress/ paris.py (crack-growth → cycles-to-limit)
-  l3_agent/    agent.py (citation-required draft) · audit.py (hash chain)
+  l1_twin/     db.py (record) · twin.py (health/RUL/fleet/CBM + forward-projection)
+               planner.py (capacity plan + rupee ledger + spares + what-if)  ← THE PAYOFF
+               shm.py (between-inspection sensor-fusion + CUSUM alert)
+               federated.py (ITAR-safe shared growth priors, FedAvg)
+               app.py (3D twin UI + JSON API) · view.py (classic view)
+               static/index.html (Three.js 3D twin, vendored, offline)
+  l2_progress/ paris.py (crack-growth + Monte-Carlo RUL with P10/P50/P90 bands)
+  l3_agent/    agent.py (citation guardrail) · copilot.py (Ollama tool-calling)
+               workorder.py (draft→sign→close lifecycle + tamper-evident PDF) · audit.py
   pipeline.py  the unbroken sense → twin → predict → prescribe → price → agent runner
 data/
-  srm_limits.csv          allowable-damage-limit table
-  manuals/srm_53-30.md    controlled corpus for the agent (ILLUSTRATIVE)
+  srm_limits.csv · manuals/srm_53-30.md (controlled corpus, ILLUSTRATIVE)
 tools/
-  make_demo_panel.py · render_dashboard.py · train.py
+  fetch_datasets.py (real dataset registry) · train.py (2-stage YOLOv8-seg → INT8 ONNX)
+  vendor_three.py (offline Three.js) · make_demo_panel.py · render_dashboard.py
 docs/
   PLAN.md · task-board.md · deck-outline.md
 ```
@@ -120,9 +124,14 @@ docs/
 
 Every team can build a defect detector, and a good team can build a health dashboard.
 AeroTwin-Edge goes a level higher: **predict → prescribe → price**, offline, in an ITAR
-hangar. Edge + per-tail twin + a *capacity-aware fleet plan quantified in rupees* +
-citation-gated agent + tamper-evident audit — no single competitor combines all of it.
-One avoided AOG day pays for the ₹10,000 node many times over.
+hangar. Under one roof, all running: an **interactive 3D structural twin** you scrub
+forward in flight cycles to watch defects grow and jets ground themselves; **uncertainty-
+aware RUL** (Monte-Carlo P10/P50/P90, not false precision); **continuous SHM** between
+inspections (sensor-fusion + CUSUM); a **capacity-aware fleet plan quantified in rupees**
+with spares pre-staging and live what-ifs; a **citation-gated local-LLM copilot** that
+tool-calls the twin; a **work-order lifecycle** closed out with a **tamper-evident PDF**;
+and **ITAR-safe federated learning** that shares growth priors, never imagery. No single
+competitor combines all of it. One avoided AOG day pays for the ₹10,000 node many times over.
 
 ## Disclaimer
 
