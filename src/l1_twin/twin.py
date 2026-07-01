@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from src.l0_detect.grade import grade_defect
 from src.l1_twin import db
+from src.l2_progress.paris import paris_rul_mc
 
 # ponytail: one fleet-wide baseline interval stands in for the calendar/hard-time
 # check. Per-ATA-zone intervals if a customer's maintenance program needs them.
@@ -108,6 +109,12 @@ def tail_state(tail: str, findings: list[dict]) -> dict:
     current_cycles = max((f["cycles"] or 0 for f in findings), default=0)
     rec = maintenance_recommendation(current_cycles, rul, grounded,
                                      worst["grade"] if worst else "")
+    # RUL as a P10-P90 band (uncertainty-aware), not a false-precision single number.
+    band = None
+    if worst and not grounded:
+        lim = _limit_mm(worst)
+        if lim:
+            band = paris_rul_mc(worst["size_mm"], lim)
     return {
         "tail": tail,
         "health": health,
@@ -115,9 +122,49 @@ def tail_state(tail: str, findings: list[dict]) -> dict:
         "open_defects": len(opens),
         "worst": worst,
         "rul_cycles": rul,
+        "rul_band": band,       # {p10,p50,p90,mean,n} — the honest RUL
         "current_cycles": current_cycles,
         **rec,
     }
+
+
+def _growth_rate(hist: list[dict]) -> float:
+    """mm/cycle from a defect's two most recent scans (0 if unknown / not growing)."""
+    h = sorted(hist, key=lambda x: x["cycles"] or 0)
+    if len(h) < 2:
+        return 0.0
+    dc = (h[-1]["cycles"] or 0) - (h[-2]["cycles"] or 0)
+    return max((h[-1]["size_mm"] - h[-2]["size_mm"]) / dc, 0.0) if dc else 0.0
+
+
+def project_tail_state(tail: str, findings: list[dict], extra_cycles: int = 0) -> dict:
+    """Run the twin FORWARD: grow each open defect by its measured rate over extra_cycles,
+    re-grade against its SRM limit, and recompute state. This is the time-scrub — drag
+    cycles forward and watch health fall and a tail ground itself when a defect crosses.
+    """
+    if extra_cycles <= 0:
+        return tail_state(tail, findings)
+    hist: dict[tuple, list[dict]] = {}
+    for f in findings:
+        hist.setdefault((f["location"], f["defect_type"]), []).append(f)
+    projected = []
+    for f in _open_defects(findings):
+        rate = _growth_rate(hist[(f["location"], f["defect_type"])])
+        new_size = round(f["size_mm"] + rate * extra_cycles, 2)
+        g = grade_defect(f["defect_type"], f["ata_zone"], new_size)
+        projected.append(dict(f, size_mm=new_size, grade=g["grade"],
+                              cycles=(f["cycles"] or 0) + extra_cycles))
+    return tail_state(tail, projected)
+
+
+def project_fleet(extra_cycles: int = 0) -> list[dict]:
+    """Every tail projected forward extra_cycles — powers the fleet-wide time-scrub."""
+    by_tail: dict[str, list[dict]] = {}
+    for r in db.all_findings():
+        by_tail.setdefault(r["tail"], []).append(r)
+    states = [project_tail_state(t, fs, extra_cycles) for t, fs in by_tail.items()]
+    states.sort(key=lambda s: (not s["grounded"], s["health"]))
+    return states
 
 
 def fleet_summary() -> list[dict]:

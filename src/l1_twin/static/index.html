@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AeroTwin-Edge · Structural Digital Twin</title>
+<style>
+  :root{
+    --bg:#070b12; --panel:#0e1622; --panel2:#131f30; --line:#1e2c40;
+    --ink:#e8eef6; --dim:#8aa0b8; --accent:#37b3ff;
+    --green:#2fbf71; --amber:#f6b73c; --red:#ff5252;
+    font-family:'Segoe UI',-apple-system,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);overflow:hidden;height:100vh}
+  #app{display:grid;grid-template-columns:1fr 380px;grid-template-rows:56px 1fr 132px;height:100vh}
+  header{grid-column:1/3;display:flex;align-items:center;gap:16px;padding:0 20px;
+    background:linear-gradient(90deg,#0b1420,#0e1a2b);border-bottom:1px solid var(--line)}
+  header h1{font-size:16px;margin:0;letter-spacing:.4px;font-weight:700}
+  header h1 b{color:var(--accent)}
+  header .tag{font-size:11px;color:var(--dim);border:1px solid var(--line);padding:3px 9px;border-radius:20px}
+  header .flow{margin-left:auto;font-size:11px;color:var(--dim);letter-spacing:1px}
+  header .flow s{color:var(--accent);text-decoration:none;font-weight:700}
+  .hud{display:flex;gap:8px;margin-left:14px}
+  .hud .chip{font-size:11px;background:#0a1420;border:1px solid var(--line);border-radius:8px;
+    padding:4px 9px;color:var(--dim);min-width:64px}
+  .hud .chip b{display:block;color:var(--ink);font-size:13px;font-variant-numeric:tabular-nums}
+  .hud .chip.live b{color:var(--green)}
+  /* stage */
+  #stage{position:relative;background:radial-gradient(1200px 700px at 50% 30%,#122036 0%,#070b12 70%)}
+  #canvas{position:absolute;inset:0}
+  .stage-badge{position:absolute;top:16px;left:16px;background:rgba(10,18,30,.82);
+    border:1px solid var(--line);border-radius:12px;padding:12px 16px;backdrop-filter:blur(4px);min-width:210px}
+  .stage-badge .tail{font-size:22px;font-weight:800;letter-spacing:.5px}
+  .stage-badge .sub{font-size:11px;color:var(--dim);margin-top:2px}
+  .stage-badge .hbar{height:8px;border-radius:6px;background:#0a1420;margin-top:10px;overflow:hidden}
+  .stage-badge .hbar>div{height:100%;transition:width .4s,background .4s}
+  .stage-badge .action{font-size:11px;margin-top:8px;color:var(--ink);line-height:1.4}
+  .legend{position:absolute;top:16px;right:16px;font-size:10px;color:var(--dim);text-align:right;line-height:1.7}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-left:6px;vertical-align:middle}
+  .hint{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--dim)}
+  /* scrubber */
+  .scrub{position:absolute;left:16px;right:16px;bottom:14px;background:rgba(10,18,30,.85);
+    border:1px solid var(--line);border-radius:12px;padding:10px 16px;backdrop-filter:blur(4px)}
+  .scrub .row{display:flex;align-items:center;gap:14px}
+  .scrub label{font-size:11px;color:var(--dim);white-space:nowrap}
+  .scrub .val{font-size:13px;font-weight:700;color:var(--accent);min-width:120px;font-variant-numeric:tabular-nums}
+  .scrub input[type=range]{flex:1;accent-color:var(--accent)}
+  .scrub .fleetstat{font-size:11px;color:var(--dim)}
+  .scrub .fleetstat b{color:var(--ink)}
+  /* side panel */
+  aside{grid-row:2/3;background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;padding:16px}
+  aside h2{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin:0 0 10px}
+  .ledger{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+  .ledger .cell{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}
+  .ledger .cell.net{grid-column:1/3;border-color:#1c5138;background:linear-gradient(180deg,#0f2419,#0e1622)}
+  .ledger .cell b{display:block;font-size:20px;line-height:1.1}
+  .ledger .cell.net b{color:var(--green);font-size:26px}
+  .ledger .cell span{font-size:10px;color:var(--dim)}
+  .ledger .cell.carry{border-color:#5b2020}.ledger .cell.carry b{color:var(--red)}
+  .defect{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer;transition:border-color .2s}
+  .defect:hover{border-color:var(--accent)}
+  .defect.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .defect .top{display:flex;justify-content:space-between;align-items:center}
+  .defect .dt{font-weight:700;font-size:14px;text-transform:capitalize}
+  .defect .g{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;color:#07121e}
+  .defect .loc{font-size:11px;color:var(--dim);margin:2px 0 8px}
+  .defect .band{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim);margin-top:8px}
+  .bandbar{flex:1;height:22px;position:relative;background:#0a1420;border-radius:6px;overflow:hidden}
+  .bandbar .rng{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,#3a2a10,#7a5a14);opacity:.7}
+  .bandbar .p50{position:absolute;top:0;bottom:0;width:2px;background:var(--amber)}
+  .bandbar .lab{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink)}
+  svg.spark{width:100%;height:52px;margin-top:8px;background:#0a1420;border-radius:6px}
+  .fleet{grid-column:1/3;background:#0a111c;border-top:1px solid var(--line);display:flex;gap:10px;
+    padding:12px 16px;overflow-x:auto;align-items:stretch}
+  .fcard{min-width:150px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;cursor:pointer;transition:.2s;flex:0 0 auto}
+  .fcard:hover{transform:translateY(-2px)}
+  .fcard.sel{border-color:var(--accent)}
+  .fcard .ft{font-weight:800;font-size:15px;letter-spacing:.5px}
+  .fcard .fm{font-size:10px;color:var(--dim);margin:3px 0 8px}
+  .fcard .hbar{height:6px;border-radius:5px;background:#0a1420;overflow:hidden}
+  .fcard .hbar>div{height:100%;transition:.4s}
+  .fcard .pill{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;float:right}
+  .muted{color:var(--dim);font-size:11px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1><b>AeroTwin</b>-Edge</h1>
+    <span class="tag">Offline structural digital twin</span>
+    <span class="tag">ITAR-safe · Raspberry Pi 5</span>
+    <div class="hud" id="hud"></div>
+    <div class="flow">PREDICT <s>→</s> PRESCRIBE <s>→</s> PRICE</div>
+  </header>
+
+  <div id="stage">
+    <canvas id="canvas"></canvas>
+    <div class="stage-badge" id="badge">
+      <div class="tail">—</div><div class="sub">select a tail</div>
+      <div class="hbar"><div style="width:0%"></div></div>
+      <div class="action"></div>
+    </div>
+    <div class="legend">
+      structural health
+      <div>healthy <i style="background:#2fbf71"></i> · watch <i style="background:#f6b73c"></i> · critical <i style="background:#ff5252"></i></div>
+      <div style="margin-top:6px">● defect hotspot (click)</div>
+    </div>
+    <div class="hint">drag to orbit · scroll to zoom · click a red hotspot</div>
+    <div class="scrub">
+      <div class="row">
+        <label>RUN TWIN FORWARD</label>
+        <span class="val" id="scrubval">+0 cycles (now)</span>
+        <input type="range" id="scrub" min="0" max="12000" step="250" value="0">
+        <span class="fleetstat" id="fleetstat"></span>
+      </div>
+    </div>
+  </div>
+
+  <aside>
+    <h2>Prescriptive plan · rupee ledger</h2>
+    <div class="ledger" id="ledger"></div>
+    <h2>Open defects · this tail</h2>
+    <div id="defects"><p class="muted">Loading…</p></div>
+  </aside>
+
+  <div class="fleet" id="fleet"></div>
+</div>
+
+<script src="/static/vendor/three.min.js"></script>
+<script src="/static/vendor/OrbitControls.js"></script>
+<script>
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const inr = n => n>=1e7 ? '₹'+(n/1e7).toFixed(2)+' Cr' : n>=1e5 ? '₹'+(n/1e5).toFixed(1)+' L' : '₹'+Math.round(n).toLocaleString('en-IN');
+function healthColor(h, grounded){
+  if(grounded) return new THREE.Color('#ff5252');
+  if(h>=70) return new THREE.Color('#2fbf71');
+  if(h>=40) return new THREE.Color('#f6b73c');
+  return new THREE.Color('#ff5252');
+}
+const GRADE_HEX = {minor:'#2fbf71',major:'#f6b73c',critical:'#ff8a3d','beyond-limit':'#ff5252',unknown:'#8aa0b8'};
+
+// ---------- three.js scene ----------
+const canvas = $('#canvas');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x070b12, 14, 34);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+camera.position.set(7, 4.5, 9);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = .08;
+controls.minDistance = 5; controls.maxDistance = 24; controls.target.set(0,0.3,0);
+
+scene.add(new THREE.HemisphereLight(0x9fc4ff, 0x0a1018, 0.9));
+const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(6,10,6); scene.add(key);
+const rim = new THREE.DirectionalLight(0x3aa0ff, .6); rim.position.set(-8,3,-6); scene.add(rim);
+const grid = new THREE.GridHelper(40, 40, 0x1d3350, 0x122033); grid.position.y=-1.4; scene.add(grid);
+
+// ---------- procedural narrow-body aircraft ----------
+const NSEG = 8, FL = 9, R = 0.72;         // zones, fuselage length, radius
+const plane = new THREE.Group(); scene.add(plane);
+const zoneMeshes = [];
+const segLen = FL/NSEG;
+const skinMat = () => new THREE.MeshStandardMaterial({color:0x8aa0b8, metalness:.55, roughness:.45});
+for(let i=0;i<NSEG;i++){
+  const g = new THREE.CylinderGeometry(R,R,segLen*0.98,40,1,true);
+  const m = new THREE.Mesh(g, skinMat());
+  m.rotation.z = Math.PI/2;                 // lie along X
+  m.position.x = FL/2 - segLen*(i+0.5);     // zone 0 at nose (+X)
+  m.userData.zone = i;
+  plane.add(m); zoneMeshes.push(m);
+}
+// nose cone (+X) & tail cone (-X)
+const nose = new THREE.Mesh(new THREE.ConeGeometry(R,1.6,40), skinMat());
+nose.rotation.z = -Math.PI/2; nose.position.x = FL/2+0.7; plane.add(nose);
+const tail = new THREE.Mesh(new THREE.ConeGeometry(R,2.2,40), skinMat());
+tail.rotation.z = Math.PI/2; tail.position.x = -FL/2-0.9; plane.add(tail);
+// wings
+function wing(z){ const w=new THREE.Mesh(new THREE.BoxGeometry(2.4,0.12,4.4), skinMat());
+  w.position.set(0.3,-0.15,z); w.rotation.y = z>0?-0.32:0.32; return w; }
+plane.add(wing(2.6)); plane.add(wing(-2.6));
+// tailplane + fin
+function stab(z){ const s=new THREE.Mesh(new THREE.BoxGeometry(1.3,0.1,1.8), skinMat());
+  s.position.set(-FL/2-0.2,0.1,z); s.rotation.y=z>0?-0.3:0.3; return s;}
+plane.add(stab(1.0)); plane.add(stab(-1.0));
+const fin = new THREE.Mesh(new THREE.BoxGeometry(1.6,1.7,0.12), skinMat());
+fin.position.set(-FL/2-0.2,0.9,0); fin.rotation.z=0.25; plane.add(fin);
+// engines
+function eng(z){ const e=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.34,1.1,24), new THREE.MeshStandardMaterial({color:0x223247,metalness:.7,roughness:.35}));
+  e.rotation.z=Math.PI/2; e.position.set(0.6,-0.7,z); return e;}
+plane.add(eng(2.2)); plane.add(eng(-2.2));
+
+// ---------- hotspots ----------
+let hotspots = [];
+const raycaster = new THREE.Raycaster();
+function clearHotspots(){ hotspots.forEach(h=>plane.remove(h)); hotspots=[]; }
+function segForLocation(loc){ const n=parseInt((loc||'').replace(/\D/g,''))||0; return n % NSEG; }
+function addHotspot(def){
+  const zi = segForLocation(def.location);
+  const xi = FL/2 - segLen*(zi+0.5);
+  const ang = ((parseInt((def.location||'').replace(/\D/g,''))||0)%6)/6 * Math.PI*2;
+  const col = GRADE_HEX[def.grade]||'#ff5252';
+  const s = new THREE.Mesh(new THREE.SphereGeometry(0.11,20,20),
+     new THREE.MeshStandardMaterial({color:col, emissive:col, emissiveIntensity:1.1}));
+  s.position.set(xi, Math.cos(ang)*R*0.92 + 0.05, Math.sin(ang)*R*0.92);
+  s.userData.def = def; s.userData.base = 0.11;
+  plane.add(s); hotspots.push(s);
+}
+
+// ---------- coloring ----------
+function colorByHealth(h, grounded){
+  const c = healthColor(h, grounded);
+  zoneMeshes.forEach(m=>{ m.material.color.copy(c); m.material.emissive.copy(c);
+    m.material.emissiveIntensity = grounded?0.35:0.12; });
+}
+function accentDefects(defects){
+  defects.forEach(d=>{ const zi=segForLocation(d.location); const m=zoneMeshes[zi];
+    if(m){ const c=new THREE.Color(GRADE_HEX[d.grade]||'#ff5252'); m.material.color.copy(c);
+      m.material.emissive.copy(c); m.material.emissiveIntensity=0.3; }});
+}
+
+// ---------- state ----------
+let selectedTail=null, tailData={}, groundedNow=false;
+
+async function loadFleet(){
+  const f = await (await fetch('/api/fleet')).json();
+  renderLedger(f.plan.ledger); renderFleet(f.states);
+  if(!selectedTail && f.states.length) selectTail(f.states[0].tail);
+}
+function renderLedger(lg){
+  const carry = lg.aog_risk_carried ? `<div class="cell carry"><b>${inr(lg.aog_risk_carried)}</b><span>AOG risk carried (add a slot)</span></div>`:'';
+  $('#ledger').innerHTML = `
+    <div class="cell net"><b>${inr(lg.net_value)}</b><span>net value this window vs blind calendar</span></div>
+    <div class="cell"><b>${inr(lg.aog_risk_avoided)}</b><span>AOG risk avoided</span></div>
+    <div class="cell"><b>${inr(lg.downtime_recovered)}</b><span>downtime recovered (${lg.safely_deferred} deferred)</span></div>
+    <div class="cell"><b>${lg.twin_serviced}/${lg.calendar_checks}</b><span>serviced vs calendar (cap ${lg.capacity})</span></div>
+    ${carry}`;
+}
+function renderFleet(states){
+  $('#fleet').innerHTML = states.map(s=>{
+    const c = '#'+healthColor(s.health,s.grounded).getHexString();
+    const pill = s.grounded?`<span class="pill" style="background:#ff5252;color:#180708">GROUNDED</span>`:'';
+    return `<div class="fcard ${s.tail===selectedTail?'sel':''}" data-tail="${s.tail}">
+      <div class="ft">${s.tail}${pill}</div>
+      <div class="fm">${s.grounded?'beyond limit':s.health+'/100 · '+(s.open_defects)+' open'}</div>
+      <div class="hbar"><div style="width:${Math.max(s.health,4)}%;background:${c}"></div></div>
+    </div>`;}).join('');
+  $('#fleet').querySelectorAll('.fcard').forEach(el=>el.onclick=()=>selectTail(el.dataset.tail));
+}
+
+async function selectTail(tail){
+  selectedTail = tail;
+  const t = await (await fetch('/api/tail/'+tail)).json();
+  tailData[tail]=t;
+  clearHotspots(); t.defects.forEach(addHotspot);
+  const st = t.state||{};
+  groundedNow = !!st.grounded;
+  colorByHealth(st.health??100, groundedNow); accentDefects(t.defects);
+  renderBadge(st); renderDefects(t.defects);
+  document.querySelectorAll('.fcard').forEach(el=>el.classList.toggle('sel', el.dataset.tail===tail));
+  $('#scrub').value=0; $('#scrubval').textContent='+0 cycles (now)'; $('#fleetstat').textContent='';
+}
+function renderBadge(st){
+  const c = '#'+healthColor(st.health??100, st.grounded).getHexString();
+  $('#badge').querySelector('.tail').textContent = st.tail||selectedTail;
+  $('#badge').querySelector('.sub').textContent = st.grounded?'GROUNDED · beyond limit':
+     `health ${st.health}/100 · ${st.open_defects} open defect(s)`;
+  const bar=$('#badge').querySelector('.hbar>div'); bar.style.width=Math.max(st.health??0,4)+'%'; bar.style.background=c;
+  $('#badge').querySelector('.action').textContent = st.action||'';
+}
+function renderDefects(defs){
+  if(!defs.length){ $('#defects').innerHTML='<p class="muted">No open defects.</p>'; return; }
+  $('#defects').innerHTML = defs.map((d,i)=>{
+    const g=GRADE_HEX[d.grade]||'#8aa0b8';
+    const band = tailBand(d);
+    return `<div class="defect" data-i="${i}">
+      <div class="top"><span class="dt">${d.defect_type}</span>
+        <span class="g" style="background:${g}">${(d.grade||'').toUpperCase()}</span></div>
+      <div class="loc">ATA ${d.ata_zone} · ${d.location} · ${d.size_mm} mm / ${d.limit_mm??'—'} mm limit</div>
+      ${band}
+      ${spark(d)}
+    </div>`;}).join('');
+  $('#defects').querySelectorAll('.defect').forEach(el=>el.onclick=()=>focusDefect(+el.dataset.i));
+}
+function tailBand(d){
+  const b = (tailData[selectedTail].state||{}).rul_band;
+  if(!b) return '<div class="muted" style="margin-top:6px">RUL: n/a</div>';
+  return `<div class="band"><span>RUL</span><div class="bandbar">
+    <div class="rng" style="left:5%;right:5%"></div><div class="p50" style="left:50%"></div>
+    <div class="lab">P10 ${b.p10.toLocaleString()} · P50 ${b.p50.toLocaleString()} · P90 ${b.p90.toLocaleString()} cyc</div>
+    </div></div>`;
+}
+function spark(d){
+  const pts=d.growth; if(!pts||pts.length<2) return '';
+  const W=320,H=52, xs=pts.map(p=>p.cycles), ys=pts.map(p=>p.size_mm);
+  const ymax=Math.max(...ys, d.limit_mm||0)*1.1||1, xmax=Math.max(...xs)||1;
+  const X=c=>6+(W-12)*(c/xmax), Y=v=>H-6-(H-12)*(v/ymax);
+  const poly=pts.map(p=>`${X(p.cycles).toFixed(1)},${Y(p.size_mm).toFixed(1)}`).join(' ');
+  const lim=d.limit_mm?`<line x1="6" y1="${Y(d.limit_mm).toFixed(1)}" x2="${W-6}" y2="${Y(d.limit_mm).toFixed(1)}" stroke="#ff5252" stroke-dasharray="4 3"/>`:'';
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${lim}
+    <polyline points="${poly}" fill="none" stroke="#37b3ff" stroke-width="2"/></svg>`;
+}
+function focusDefect(i){
+  document.querySelectorAll('.defect').forEach((e,j)=>e.classList.toggle('sel',i===j));
+  const d=tailData[selectedTail].defects[i]; const zi=segForLocation(d.location);
+  const xi=FL/2-segLen*(zi+0.5);
+  controls.target.set(xi,0.3,0);
+}
+
+// ---------- time scrub ----------
+let scrubTimer=null;
+$('#scrub').addEventListener('input', e=>{
+  const cyc=+e.target.value;
+  $('#scrubval').textContent = cyc===0?'+0 cycles (now)':`+${cyc.toLocaleString()} cycles`;
+  clearTimeout(scrubTimer);
+  scrubTimer=setTimeout(()=>scrubTo(cyc), 60);
+});
+async function scrubTo(cyc){
+  const r = await (await fetch('/api/scrub?cycles='+cyc)).json();
+  renderLedger(r.plan.ledger);
+  const st = r.states.find(s=>s.tail===selectedTail);
+  if(st){ groundedNow=!!st.grounded; colorByHealth(st.health,st.grounded); renderBadge(st); }
+  // update fleet strip healths to projected
+  r.states.forEach(s=>{ const el=document.querySelector(`.fcard[data-tail="${s.tail}"]`); if(!el)return;
+    const c='#'+healthColor(s.health,s.grounded).getHexString();
+    el.querySelector('.hbar>div').style.width=Math.max(s.health,4)+'%';
+    el.querySelector('.hbar>div').style.background=c; });
+  const gnd=r.states.filter(s=>s.grounded).length;
+  $('#fleetstat').innerHTML = `fleet: <b>${gnd}</b> grounded · <b>${r.states.length-gnd}</b> flying`;
+}
+
+// ---------- telemetry HUD ----------
+async function poll(){
+  try{ const t=await (await fetch('/api/telemetry')).json();
+    $('#hud').innerHTML = `
+     <div class="chip live"><b>${t.fps}</b>FPS ${t.simulated?'(sim)':''}</div>
+     <div class="chip"><b>${t.latency_ms}</b>ms</div>
+     <div class="chip"><b>${t.cpu_temp_c}°</b>C</div>
+     <div class="chip"><b>${t.power_w}</b>W</div>
+     <div class="chip live"><b>OFFLINE</b>edge</div>`;
+  }catch(e){}
+}
+setInterval(poll, 1200); poll();
+
+// ---------- pick + resize + animate ----------
+renderer.domElement.addEventListener('pointerdown', ev=>{
+  const r=renderer.domElement.getBoundingClientRect();
+  const m=new THREE.Vector2(((ev.clientX-r.left)/r.width)*2-1, -((ev.clientY-r.top)/r.height)*2+1);
+  raycaster.setFromCamera(m,camera);
+  const hit=raycaster.intersectObjects(hotspots)[0];
+  if(hit){ const i=tailData[selectedTail].defects.indexOf(hit.object.userData.def); if(i>=0) focusDefect(i); }
+});
+function resize(){ const w=$('#stage').clientWidth,h=$('#stage').clientHeight;
+  renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+window.addEventListener('resize',resize); resize();
+let clock=0;
+(function animate(){ requestAnimationFrame(animate); clock+=0.03;
+  plane.rotation.y += 0.0015;
+  hotspots.forEach(h=>{ const s=h.userData.base*(1+0.35*Math.sin(clock*3)); h.scale.setScalar(s/h.userData.base); });
+  if(groundedNow){ const p=0.35+0.25*Math.sin(clock*4);
+    zoneMeshes.forEach(m=>m.material.emissiveIntensity=p); }
+  controls.update(); renderer.render(scene,camera);
+})();
+
+loadFleet();
+</script>
+</body>
+</html>
