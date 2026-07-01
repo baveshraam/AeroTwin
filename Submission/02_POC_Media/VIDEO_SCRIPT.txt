@@ -1,64 +1,69 @@
 AeroTwin-Edge — 2-MINUTE VIRTUAL POC SCRIPT
+Problem statement: EDGE AI FOR DIGITAL TWIN-ENABLED MRO.
 Record screen with OBS Studio (free); film the Pi on a phone; cut in DaVinci
 Resolve or CapCut (free). Total ~120 s. Time-coded [SCREEN] / [SAY].
 
-CONSISTENCY RULE: the cycle number you SAY here, the number on the dashboard
-chart, and the number on SLIDE 4/8 must all match. This script uses ~40 cycles;
-twin_console.py uses PROJECTED_CYCLES = 40. Change all three together if you
-adjust it. (See POC_BUILD_RUNBOOK.txt — note on the 40-cycle figure.)
+FRAMING RULE: the twin is the hero, defect detection is the sensor. The money shot
+is the FLEET RISK BOARD (from `python -m src.pipeline --seed` -> the dashboard), not
+the crack box. The numbers you SAY, the dashboard, and SLIDES 4/8 must all match.
 
 ------------------------------------------------------------------
-[0:00-0:15]  HOOK
-  [SCREEN] Title slide: "AeroTwin-Edge — Offline Edge AI for Aircraft Structural
-           Inspection". Sub-line: "AOG cost: up to Rs 1.25 crore / hour."
-  [SAY] "An aircraft on ground costs an operator up to one-point-two-five crore
-         rupees an hour. Yet the structural inspection that decides whether that jet
-         flies is still manual, subjective, and paper-trailed. AeroTwin-Edge moves
-         that decision to the edge — fully offline, inside the hangar."
+[0:00-0:15]  HOOK  (the real problem)
+  [SCREEN] Title slide: "AeroTwin-Edge — an offline structural DIGITAL TWIN for
+           condition-based MRO". Sub-line: "AOG cost: up to Rs 1.25 crore / hour."
+  [SAY] "Airlines maintain aircraft structure on a fixed calendar. That over-maintains
+         the healthy jets and misses the few with fast-growing cracks — and an aircraft
+         on ground costs up to one-point-two-five crore rupees an hour. AeroTwin-Edge
+         replaces the blind calendar with a digital twin that knows each tail's actual
+         condition — fully offline, inside the hangar."
 
 [0:15-0:30]  THE EDGE DEVICE  (live Pi footage)
   [SCREEN] Raspberry Pi 5 + camera on the bench, airplane-mode / no-network shown.
-  [SAY] "This is the entire inspection lab — a ten-thousand-rupee Raspberry Pi 5 in
-         airplane mode. No cloud, no network. That is mandatory inside ITAR-restricted
-         hangars, where inspection imagery legally cannot leave the site."
+  [SAY] "The whole twin runs on a ten-thousand-rupee Raspberry Pi 5 in airplane mode.
+         No cloud, no network — mandatory inside ITAR-restricted hangars, where
+         inspection imagery legally cannot leave the site."
 
-[0:30-0:55]  REAL DETECTION + SIZING  (the key feature — screen recording)
+[0:30-0:50]  THE SENSOR  (detection + sizing — the input, kept tight)
   [SCREEN] Load a cracked skin-panel image with an ArUco marker; run detection; mask
            overlays the crack; "8.0 mm" and "MAJOR — 67% of 12 mm SRM limit" print.
-  [SAY] "We scan a fuselage skin panel. Our model segments the crack — pixel-accurate
-         geometry, not a coarse box. Using an ArUco fiducial we convert pixels to
-         millimetres: this crack is eight millimetres. We grade it against the
-         Structural Repair Manual limit table — twelve millimetres allowable — so it
-         is a major finding at sixty-seven percent of limit. That is the leap: from
-         'the AI saw something' to a calibrated airworthiness measurement."
+  [SAY] "One inspection feeds the twin. We segment the crack, convert pixels to
+         millimetres with an ArUco fiducial — eight millimetres — and grade it against
+         the Structural Repair Manual limit. That's the calibrated measurement the twin
+         records; detection is just the sensor."
 
-[0:55-1:20]  TWIN + PROGRESSION  (dashboard)
-  [SCREEN] Console: tail VT-XYZ, ATA 53 / stringer 14, history 6.0 mm -> 8.0 mm,
-           Paris-law curve crossing the 12 mm limit.
-  [SAY] "Every finding writes into a digital twin for this exact tail number. Last
-         C-check, this crack was six millimetres; it has grown to eight. Our
-         crack-growth model projects it crosses the SRM limit in about forty flight
-         cycles — so the system pulls this inspection forward, instead of waiting for
-         the calendar. That is the shift from scheduled to condition-based maintenance."
+[0:50-1:20]  THE TWIN + THE FLEET BOARD  (the hero — dashboard)
+  [SCREEN] Dashboard: tail VT-AXB history 6.0 mm -> 8.0 mm, health index drops,
+           remaining-useful-life to the 12 mm limit. Then scroll to the FLEET RISK
+           BOARD: four tails ranked worst-first.
+  [SAY] "Every finding writes into this tail's twin. VT-AXB grew from six to eight
+         millimetres since the last check; its health index drops and the twin predicts
+         the cycles left to the limit. Now the fleet board — every tail ranked worst
+         first. One is beyond limit and GROUNDED. Two are growing fast, so the twin
+         PULLS their inspections FORWARD. And one is healthy enough to SAFELY EXTEND by
+         thirty thousand cycles — recovered downtime the calendar would have wasted.
+         That is condition-based maintenance, on one screen."
 
-[1:20-1:45]  AGENTIC COPILOT
+[1:20-1:45]  AGENTIC COPILOT + AUDIT
   [SCREEN] Agent drafts a work order citing SRM 53-xx; "Awaiting certifying-engineer
-           sign-off" button.
-  [SAY] "An on-device agent retrieves the governing repair scheme and drafts the work
-         order — every claim cited to a manual section, never invented. The certifying
-         engineer reviews and signs. The AI assists; the human stays accountable. And
-         every step is hash-chain logged for audit."
+           sign-off". Then edit one audit-log line -> verify() prints FALSE.
+  [SAY] "For each call, an on-device agent drafts the work order — every claim cited to
+         a manual section, never invented — and the certifying engineer signs. Every
+         step is hash-chain logged: tamper one line and the chain fails verification.
+         The AI assists; the human stays accountable; the regulator gets its evidence."
 
 [1:45-2:00]  CLOSE
   [SCREEN] Architecture diagram, federated-fleet layer highlighted as roadmap.
-  [SAY] "One tail today; a fleet tomorrow — improving through federated learning while
+  [SAY] "One fleet today; many tomorrow — improving through federated learning while
          raw imagery never leaves the site. Offline, certifiable, and built for the
          four-billion-dollar Indian MRO market Tata is standing up right now.
-         AeroTwin-Edge: the system that decides what to fix, and when — and proves it."
+         AeroTwin-Edge: the digital twin that decides what to fix, when, and on which
+         aircraft — and proves it."
 ------------------------------------------------------------------
 
 DELIVERY TIPS
 - One continuous take per segment; calm, declarative voice.
-- Show the mm number and the SRM limit on screen long enough to read.
-- Do NOT rush the detection moment (0:30-0:55) — that is the credibility shot.
+- The FLEET BOARD (0:50-1:20) is the credibility shot — hold it long enough to read
+  all four tails and their calls. Do NOT rush it.
+- `python -m src.pipeline --seed` gives a deterministic 4-tail fleet, so every take
+  shows the same board. `python tools/render_dashboard.py` for a clean static capture.
 - Record one clean end-to-end backup take and keep it on disk before the real one.

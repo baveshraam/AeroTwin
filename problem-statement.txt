@@ -2,9 +2,10 @@
 TATA INNOVENT-27  |  AI AT THE EDGE  |  PROBLEM STATEMENT (v2, deep)
 Project: AeroTwin-Edge
 Track:   3.2.3 Aerospace
-         3.2.3.4 Edge AI for Intelligent Inspection & Defect Detection (primary)
-         3.2.3.1 Edge AI for Digital Twin-Enabled MRO (fused)
-         touches 3.2.3.3 (predictive) and 3.2.3.5 (secure/software-defined)
+         3.2.3.1 Edge AI for Digital Twin-Enabled MRO (PRIMARY)
+         3.2.3.3 Predictive Maintenance & Aircraft Health Monitoring (depth layer)
+         3.2.3.4 Intelligent Inspection & Defect Detection (the SENSOR that feeds the twin)
+         touches 3.2.3.5 (secure/software-defined)
 ================================================================================
 
 CONTENTS
@@ -41,9 +42,9 @@ the deeper working notes behind these answers.)
 ----------------------------------------------------------------------
 Q42. PROJECT TITLE
 ----------------------------------------------------------------------
-AeroTwin-Edge: offline edge AI for intelligent aircraft inspection and defect
-detection, with digital twin health monitoring, predictive condition based
-maintenance and federated fleet learning
+AeroTwin-Edge: an offline, per tail and per fleet structural digital twin for
+condition based aircraft maintenance (MRO) at the edge, with predictive remaining
+useful life, agentic manual cited work orders and federated fleet learning
 
 ----------------------------------------------------------------------
 Q43. PROJECT CATEGORY
@@ -53,58 +54,64 @@ AI at the Edge Solutions for Aerospace
 ----------------------------------------------------------------------
 Q44. PROJECT SUBCATEGORY (primary)
 ----------------------------------------------------------------------
-Edge AI for Intelligent Inspection & Defect Detection
-(digital twin enabled MRO, predictive maintenance and secure software defined
-aerospace are addressed as depth layers within the solution)
+Edge AI for Digital Twin-Enabled MRO
+(predictive maintenance and aircraft health monitoring, intelligent inspection and
+defect detection, and secure software defined aerospace are addressed as depth
+layers within the solution; defect detection is the sensor that feeds the twin)
 
 ----------------------------------------------------------------------
 Q45. SPECIFIC REAL WORLD PROBLEM
 ----------------------------------------------------------------------
-aircraft structural inspection remains a predominantly manual, visual and calendar
-driven discipline, which introduces three persistent weaknesses at the point of
-work. first, detection reliability is inconsistent. the probability of detection
-for fine cracks and early stage corrosion varies with inspector skill, experience
-and fatigue, and severity is assessed against SRM allowable limits visually, so the
-measurement that governs airworthiness is seldom repeatable. second, inspection
-outcomes are poorly retained. findings are recorded on paper task cards and
-disconnected systems, with no continuous condition history maintained for each tail
-number, which makes any reliable assessment of defect progression between checks
-difficult. third, the process is operationally reactive. inspection is performed
-under AOG conditions, where ground time is estimated at approximately rupees 8 lakh
-to 1.25 crore per hour, and a fixed interval check regime simultaneously over
-maintains healthy structure while failing to advance maintenance on rapidly
-progressing defects. conventional cloud based artificial intelligence cannot
-address this environment, because secure ITAR restricted hangars are frequently
-network isolated and inspection imagery cannot lawfully leave the site. the
-consequence is an inspection function that is subjective, weakly traceable and
-reactive within a safety critical and high cost industry. this is the specific
-problem the project addresses within the aerospace intelligent inspection and
-defect detection category.
+aircraft structural maintenance is scheduled predominantly on a fixed calendar or
+hard time interval rather than on the actual condition of each aircraft, which is
+simultaneously wrong in two costly directions. it over maintains the healthy
+majority of the fleet, which is pulled off line for structural checks it did not
+require, wasting ground time, labour and parts. and it under maintains the small
+number of tails whose cracks or corrosion progress quickly, because such a defect
+can outrun the interval and reach a structural repair manual allowable limit
+between scheduled checks, which is the safety and aircraft on ground exposure, where
+ground time is estimated at approximately rupees 8 lakh to 1.25 crore per hour. the
+root cause is that there is no continuous, per tail number condition record to
+schedule against. findings are held on paper task cards and disconnected systems, so
+a reliable answer to whether a given defect has grown since the last check on that
+specific tail is difficult to obtain, and severity is still assessed against SRM
+allowable limits visually, so even the measurement that would feed such a record is
+seldom repeatable. conventional cloud based artificial intelligence cannot supply
+this record, because secure ITAR restricted hangars are frequently network isolated
+and inspection imagery cannot lawfully leave the site. the missing element is a
+structural digital twin, built and queried at the edge, that converts inspections
+into a per tail condition trajectory and a fleet wide maintenance decision. this is
+the specific problem the project addresses within the digital twin enabled MRO
+category, with intelligent inspection and defect detection serving as the sensor.
 
 ----------------------------------------------------------------------
 Q46. HOW THE PROJECT ADDRESSES THE PROBLEM AND THE VALUE IT CREATES
 ----------------------------------------------------------------------
-the project delivers an offline, edge resident inspection and condition management
-capability that operates directly at the aircraft on a Raspberry Pi class device,
-performing three coordinated functions in a single inspection pass. first, it
-detects, segments and severity grades structural defects against SRM allowable
-limits, converting a subjective visual judgement into a consistent, millimetre
-accurate and repeatable measurement. second, it employs unsupervised anomaly
-detection in place of large labelled datasets, which is essential in an aerospace
-context where representative defect imagery is inherently scarce, and which enables
-the system to identify damage it was not explicitly trained to recognise. third,
-and most significantly, it records every finding within a persistent digital twin
-maintained for each individual tail number, associating the defect with its part
-and ATA zone, tracking its evolution across successive inspections, and forecasting
-the flight cycle at which it will exceed its allowable limit. an agentic assistant
-then retrieves the governing AMM and SRM provisions and prepares the corresponding
-work order, while final acceptance remains with the certifying engineer, ensuring
-accountability is preserved. the architecture is fully offline, compliant with ITAR
-site constraints, and underpinned by a tamper evident audit trail, which together
-make it deployable within an operational hangar rather than a controlled
-laboratory. the resulting value is a transition from reactive, calendar based
-inspection to predictive, condition based maintenance, supported by traceability of
-regulatory standard.
+the project delivers an offline, edge resident structural digital twin that operates
+directly at the aircraft on a Raspberry Pi class device and maintains, per tail and
+across the fleet, the condition record and the maintenance decision that today do not
+exist. every inspection is appended to a persistent per tail twin, associated with its
+part and ATA zone and severity graded against SRM allowable limits, which converts a
+subjective visual judgement into a consistent, millimetre accurate and repeatable
+measurement and, more importantly, into a condition trajectory. from that record the
+twin computes each aircraft a structural health index, estimates its remaining useful
+life as the flight cycles until its worst defect reaches its allowable limit, and
+issues a condition based scheduling decision, namely to pull an inspection forward on a
+fast growing defect, to safely extend it on a healthy structure, or to ground a tail
+whose damage is beyond limit, each quantified against the calendar baseline. these
+states are aggregated into a fleet risk board that ranks every tail worst first, so a
+planner sees at a glance which aircraft needs attention and which is safe to defer. the
+defect detector is one sensor feeding this twin, and it uses unsupervised anomaly
+detection alongside supervised segmentation so that it is not dependent on large
+labelled datasets, which are inherently scarce in aerospace. an agentic assistant then
+retrieves the governing AMM and SRM provisions and prepares the corresponding work
+order under a citation required guardrail, while final acceptance remains with the
+certifying engineer, ensuring accountability is preserved. the architecture is fully
+offline, compliant with ITAR site constraints, and underpinned by a tamper evident
+audit trail, which together make it deployable within an operational hangar rather
+than a controlled laboratory. the resulting value is a transition from reactive,
+calendar based maintenance to predictive, condition based maintenance across the
+fleet, supported by traceability of regulatory standard.
 
 ----------------------------------------------------------------------
 Q47. TECHNOLOGIES AND FRAMEWORKS
@@ -122,7 +129,13 @@ Raspberry Pi 5, with an optional Hailo accelerator where additional throughput i
 required. dimensional accuracy is achieved using OpenCV with ArUco fiducial
 references, which translate segmentation geometry into calibrated millimetre
 measurements evaluated against a configurable SRM limit table. defect progression is
-estimated using a Paris law fatigue crack growth formulation. the agentic layer
+estimated using a Paris law fatigue crack growth formulation together with an
+empirical two scan growth rate. on top of this the digital twin layer computes, from
+the per tail record, a structural health index, a remaining useful life in flight
+cycles, and a condition based scheduling decision quantified against the calendar
+baseline, and aggregates every tail into a fleet risk board ranked worst first; this
+twin logic is deterministic and unit tested, and is the core of the solution while
+detection is treated as an interchangeable sensor. the agentic layer
 employs a local quantized LLM with retrieval augmented generation over a controlled
 AMM and SRM corpus, constrained by citation required guardrails to prevent
 unsupported determinations. federated learning is implemented using Flower with
@@ -232,12 +245,14 @@ constitutes the novelty and the differentiation of the project.
 ================================================================================
 0. ONE-LINE PITCH
 ================================================================================
-A fleet of fully-offline edge inspectors that detect and severity-grade aircraft
-defects on a Raspberry Pi 5, each growing a living digital twin of one tail
-number that tracks defect progression, predicts when a defect crosses its
-structural-repair-manual limit, and drives the next maintenance action via an
-agentic MRO copilot -- improving across the fleet through federated learning,
-with zero raw imagery ever leaving the secure site.
+A fully-offline structural DIGITAL TWIN for an aircraft fleet, running on a
+Raspberry Pi 5. It grows a living per-tail condition record, scores each aircraft's
+structural health, predicts remaining useful life to the structural-repair-manual
+limit, and drives the maintenance decision -- pull this tail's check forward, safely
+extend that one, ground the beyond-limit one -- ranking the whole fleet worst-first.
+Defect detection is the sensor that feeds it; an agentic MRO copilot drafts the
+manual-cited work order for a human to sign; the fleet improves through federated
+learning, with zero raw imagery ever leaving the secure site.
 
 
 ================================================================================
@@ -586,14 +601,16 @@ Build (only L0-L3, narrow):
      crossing prediction; tiny local LLM does RAG over an AMM/SRM excerpt to draft
      a signed work order. Keep everything tiny.
 
-THE UNBROKEN 3-MINUTE CHAIN (one tail, one defect, all offline on the Pi):
+THE UNBROKEN CHAIN (offline on the Pi -- sense, twin, predict, DECIDE, fleet, agent):
    crack on a metal panel
-     -> DETECT + GRADE         ("ATA 53, stringer 14, crack 8.0 mm")
-     -> TWIN                    ("tail VT-XYZ, was 6.0 mm last scan, +2 mm")
-     -> PROGRESSION            ("crosses 12 mm SRM limit in ~40 cycles")
+     -> SENSE + GRADE          ("ATA 53, stringer 14, crack 8.0 mm -- MAJOR")
+     -> TWIN                    ("tail VT-AXB, was 6.0 mm last check, +2 mm; health 33/100")
+     -> PREDICT                ("remaining useful life ~N flight cycles to the 12 mm limit")
+     -> DECIDE                 ("PULL INSPECTION FORWARD -- growth outruns the calendar")
+     -> FLEET BOARD            (4 tails ranked: 1 grounded, 2 pull-forward, 1 safe-to-extend)
      -> AGENT                  drafts signed work order citing SRM 53-xx, asks
                                 certifying staff to accept
-   Pi in airplane mode; latency on screen.
+   Pi in airplane mode; latency on screen; every step hash-chain logged.
 Open with 60 sec: "why edge, why CBM+, why this is Tata-MRO P&L."
 Induced-defect panel: scored cracks, salt-spray corrosion patch, a dent, a loose
 bolt as FOD.

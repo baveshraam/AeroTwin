@@ -22,13 +22,17 @@ diagrams/   (make in draw.io / Excalidraw / PowerPoint — all free)
 ------------------------------------------------------------------
 screenshots/   (PNG, full-resolution, captured from the REAL demo)
 ------------------------------------------------------------------
-[ ] 01_detection_overlay.png    — crack mask + ArUco marker + "8.0 mm" printed.
-[ ] 02_severity_grade.png       — SRM limit-table lookup ("MAJOR — 67% of 12 mm").
-[ ] 03_twin_console.png         — dashboard: tail, ATA location, current finding.
-[ ] 04_history_progression.png  — 6.0 -> 8.0 mm history table + trend.
-[ ] 05_paris_curve.png          — crack-growth curve crossing 12 mm at ~+40 cycles.
+[ ] 01_fleet_risk_board.png     — *** THE HEADLINE IMAGE *** dashboard fleet board:
+                                  4 tails ranked worst-first — 1 GROUNDED, 2 PULL-
+                                  FORWARD, 1 SAFE-TO-EXTEND. From `--seed` + dashboard.
+[ ] 02_tail_twin_card.png       — VT-AXB card: health index, 6.0 -> 8.0 mm history +
+                                  trend, remaining-useful-life to the 12 mm SRM limit.
+[ ] 03_detection_overlay.png    — crack mask + ArUco marker + "8.0 mm" (the sensor).
+[ ] 04_severity_grade.png       — SRM limit-table lookup ("MAJOR — 67% of 12 mm").
+[ ] 05_paris_curve.png          — crack-growth curve crossing the 12 mm limit.
 [ ] 06_agent_workorder.png      — drafted work order citing SRM 53-xx, sign-off pending.
-[ ] 07_pi_offline_terminal.png  — Pi terminal, airplane mode, inference log + timing.
+[ ] 07_audit_tamper.png         — verify()=True, then edit one log line -> verify()=False.
+[ ] 08_pi_offline_terminal.png  — Pi terminal, airplane mode, inference log + timing.
 
 ------------------------------------------------------------------
 video/
@@ -50,7 +54,9 @@ graphs/   (matplotlib; LABEL each PROJECTED vs MEASURED)
 ------------------------------------------------------------------
 HONESTY RULE
 ------------------------------------------------------------------
-Every screenshot under screenshots/ must come from a REAL run of detect_and_size.py
-or twin_console.py. Diagrams and the POD curve are allowed to be illustrative — say
+Every screenshot under screenshots/ must come from a REAL run: the fleet board and
+tail card from `python -m src.pipeline --seed` + the dashboard (uvicorn or
+render_dashboard.py); the detection/sizing shots from the sensor run. Diagrams and
+the POD curve are allowed to be illustrative — say
 so on the asset ("illustrative" / "preliminary methodology"). Never label a projected
 number as measured.

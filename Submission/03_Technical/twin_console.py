@@ -1,8 +1,14 @@
 """
-AeroTwin-Edge Console — the seeded digital-twin / progression / agent shell.
+AeroTwin-Edge Console — standalone single-tail twin/progression/agent shell.
 
-This is the demo dashboard. Detection numbers are REAL (from detect_and_size.py);
-the twin history and the crack-growth projection are seeded/illustrative for the POC.
+NOTE: this is a legacy standalone shell. The PRIMARY dashboard is now the repo's
+per-tail + per-fleet twin with the FLEET RISK BOARD (health index / RUL / condition-
+based scheduling). Demo and screenshot THAT, not this one:
+    python -m src.pipeline --seed
+    uvicorn src.l1_twin.app:app --port 8000      # or: python tools/render_dashboard.py
+
+Detection numbers are REAL (from detect_and_size.py); the twin history and the
+crack-growth projection here are seeded/illustrative for the POC.
 
     pip install streamlit numpy matplotlib
     streamlit run twin_console.py
