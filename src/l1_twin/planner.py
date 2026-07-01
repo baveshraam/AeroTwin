@@ -108,6 +108,54 @@ def scenario_defer(tail: str, states: list[dict] | None = None) -> dict:
     }
 
 
+def scenario_add_capacity(states: list[dict] | None = None, extra: int = 1) -> dict:
+    """What-if: add `extra` hangar slots — how much carried AOG risk does it release?"""
+    states = states if states is not None else fleet_summary()
+    base, more = fleet_plan(states), fleet_plan(states, capacity=HANGAR_CAPACITY + extra)
+    return {
+        "extra_slots": extra,
+        "base_net": base["ledger"]["net_value"],
+        "whatif_net": more["ledger"]["net_value"],
+        "risk_released": base["ledger"]["aog_risk_carried"] - more["ledger"]["aog_risk_carried"],
+    }
+
+
+# --- spares: RUL -> which repair kit to pre-stage, and by when (ILLUSTRATIVE) ----------
+KIT = {
+    ("crack", "53"): ("Fuselage skin doubler + fastener kit", 1500),
+    ("corrosion", "53"): ("Corrosion blend-out + primer/sealant kit", 800),
+}
+DEFAULT_KIT = ("General structural repair kit", 1200)  # (kit name, procurement lead-time cycles)
+
+
+def spares_forecast(states: list[dict] | None = None, horizon_cycles: int = 8000) -> dict:
+    """Turn conservative RUL (P10) into a pre-staging plan: for every tail that will need
+    a repair within the horizon, which kit, and the cycle by which it must be on order so
+    it lands before the aircraft does. Ties the money story to logistics.
+    """
+    states = states if states is not None else fleet_summary()
+    orders = []
+    for s in states:
+        w = s.get("worst")
+        if not w:
+            continue
+        rul = 0 if s.get("grounded") else (s.get("rul_band") or {}).get("p10")
+        if rul is None or rul > horizon_cycles:
+            continue  # outside the planning horizon — don't tie up inventory
+        kit, lead = KIT.get((w["defect_type"], w["ata_zone"]), DEFAULT_KIT)
+        orders.append({
+            "tail": s["tail"], "kit": kit, "defect": w["defect_type"], "ata_zone": w["ata_zone"],
+            "rul_p10": rul, "lead_time_cycles": lead, "grounded": s.get("grounded", False),
+            "order_by_cycle": s.get("current_cycles", 0) + max(0, rul - lead),
+        })
+    orders.sort(key=lambda o: o["order_by_cycle"])
+    qty: dict[str, int] = {}
+    for o in orders:
+        qty[o["kit"]] = qty.get(o["kit"], 0) + 1
+    return {"horizon_cycles": horizon_cycles, "orders": orders,
+            "kits": [{"kit": k, "qty": q} for k, q in qty.items()]}
+
+
 def print_plan(res: dict) -> None:
     lg = res["ledger"]
     print(f"FLEET PLAN (window {lg['window_cycles']} cyc, hangar capacity {lg['capacity']}):")
@@ -148,8 +196,26 @@ def _demo() -> None:
     assert res3["ledger"]["queued"] == 0 and res3["ledger"]["aog_risk_carried"] == 0
     assert res3["ledger"]["aog_risk_avoided"] == 3 * AOG_EVENT_COST
 
+    # add-capacity what-if: with 4 at-risk tails vs default capacity 3, one is queued;
+    # a 4th slot releases exactly one AOG event of carried risk.
+    four_atrisk = states + [{"tail": "P3", "health": 20, "grounded": False, "rul_cycles": 4000,
+                             "action": "PULL INSPECTION FORWARD 4000 cycles"}]
+    add = scenario_add_capacity(four_atrisk, extra=1)
+    assert add["risk_released"] == AOG_EVENT_COST, add
+
+    # spares: grounded orders immediately; a tail beyond the horizon is excluded
+    sp_states = [
+        {"tail": "G", "grounded": True, "current_cycles": 12000, "worst": {"defect_type": "crack", "ata_zone": "53"}, "rul_band": {"p10": 0}},
+        {"tail": "H", "grounded": False, "current_cycles": 12000, "worst": {"defect_type": "crack", "ata_zone": "53"}, "rul_band": {"p10": 50000}},
+    ]
+    sp = spares_forecast(sp_states, horizon_cycles=8000)
+    assert len(sp["orders"]) == 1 and sp["orders"][0]["tail"] == "G", sp   # H is out of horizon
+    assert sp["orders"][0]["order_by_cycle"] == 12000, sp                  # grounded -> order now
+
     print("planner self-check OK  |  cap2 net:", inr(lg["net_value"]),
-          " carried:", inr(lg["aog_risk_carried"]))
+          " carried:", inr(lg["aog_risk_carried"]),
+          " | +1 slot releases", inr(add["risk_released"]),
+          " | spares orders:", len(sp["orders"]))
     print()
     print_plan(res3)
 

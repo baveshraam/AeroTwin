@@ -13,16 +13,18 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from fastapi import FastAPI
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import FastAPI, Response
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.l0_detect.grade import grade_defect
-from src.l1_twin import db
-from src.l1_twin.planner import fleet_plan, scenario_defer
-from src.l1_twin.twin import fleet_summary, project_fleet
+from src.l1_twin import db, federated, shm
+from src.l1_twin.planner import fleet_plan, scenario_add_capacity, scenario_defer, spares_forecast
+from src.l1_twin.twin import _growth_rate, fleet_summary, project_fleet
 from src.l1_twin.view import render_home
 from src.l2_progress.paris import project_growth
+from src.l3_agent import copilot, workorder
+from src.l3_agent.agent import draft_work_order
 
 STATIC = Path(__file__).resolve().parent / "static"
 app = FastAPI(title="AeroTwin-Edge - Digital Twin")
@@ -91,6 +93,87 @@ def api_scrub(cycles: int = 0) -> dict:
 def api_whatif(defer: str) -> dict:
     """What-if: cost of deferring one at-risk tail (added AOG risk vs the base plan)."""
     return scenario_defer(defer)
+
+
+def _worst_growth_rate(tail: str) -> tuple[float, dict | None]:
+    """mm/cycle of a tail's worst open defect, from its own scan history (0 if none)."""
+    rows = [r for r in db.all_findings() if r["tail"] == tail]
+    hist: dict[tuple, list[dict]] = {}
+    for r in rows:
+        hist.setdefault((r["location"], r["defect_type"]), []).append(r)
+    st = next((s for s in fleet_summary() if s["tail"] == tail), None)
+    w = st and st.get("worst")
+    if not w:
+        return 0.0, None
+    return _growth_rate(hist[(w["location"], w["defect_type"])]), w
+
+
+@app.get("/api/shm/{tail}")
+def api_shm(tail: str) -> dict:
+    """Between-inspection SHM: fused strain/AE/vibration + a CUSUM change alert."""
+    rate, worst = _worst_growth_rate(tail)
+    a0 = worst["size_mm"] if worst else 6.0
+    return {"tail": tail, "rate_mm_per_cyc": rate, **shm.shm_health(rate, a0_mm=a0)}
+
+
+@app.get("/api/spares")
+def api_spares(horizon: int = 8000) -> dict:
+    """RUL-driven spare-kit pre-staging over the planning horizon."""
+    return spares_forecast(horizon_cycles=horizon)
+
+
+@app.get("/api/scenario/capacity")
+def api_scenario_capacity(extra: int = 1) -> dict:
+    """What-if: how much carried AOG risk does adding N hangar slots release?"""
+    return scenario_add_capacity(extra=extra)
+
+
+@app.get("/api/workorders")
+def api_workorders() -> dict:
+    return {"work_orders": workorder.lifecycle()}
+
+
+@app.post("/api/workorder/open")
+def api_wo_open(tail: str) -> dict:
+    """Draft a work order from a tail's latest finding (citation-gated), on the chain."""
+    rows = [r for r in db.all_findings() if r["tail"] == tail]
+    if not rows:
+        return {"status": "REFUSED", "reason": f"no findings for {tail}"}
+    f = max(rows, key=lambda r: r["cycles"] or 0)
+    g = grade_defect(f["defect_type"], f["ata_zone"], f["size_mm"])
+    wo = draft_work_order(f, g, f"~{f.get('cycles_to_limit')} cycles to limit")
+    if wo["status"] != "DRAFT_FOR_SIGNOFF":
+        return wo
+    return workorder.open_wo(f, wo)
+
+
+@app.post("/api/workorder/sign")
+def api_wo_sign(wo_id: str, signer: str = "A. Rao (LWTR-12345)") -> dict:
+    return workorder.sign_wo(wo_id, signer)
+
+
+@app.post("/api/workorder/close")
+def api_wo_close(wo_id: str) -> dict:
+    return workorder.close_wo(wo_id)
+
+
+@app.get("/api/evidence.pdf")
+def api_evidence() -> Response:
+    """Download the tamper-evident evidence pack (PDF, built from the hash chain)."""
+    return Response(workorder.evidence_pdf(), media_type="application/pdf",
+                    headers={"Content-Disposition": "inline; filename=aerotwin-evidence.pdf"})
+
+
+@app.post("/api/ask")
+def api_ask(question: str) -> dict:
+    """Local LLM copilot with tool-calling into the twin (offline; degrades gracefully)."""
+    return copilot.ask(question)
+
+
+@app.get("/api/federated")
+def api_federated() -> dict:
+    """ITAR-safe federated growth-prior simulation across hangars."""
+    return federated.simulate()
 
 
 @app.get("/api/telemetry")

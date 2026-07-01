@@ -83,6 +83,26 @@
   .fcard .hbar>div{height:100%;transition:.4s}
   .fcard .pill{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;float:right}
   .muted{color:var(--dim);font-size:11px}
+  .spares{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+  .sprow{display:flex;justify-content:space-between;gap:8px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:8px;padding:8px 10px;font-size:11px}
+  .sprow b{color:var(--ink)} .sprow .now{color:var(--red);font-weight:700}
+  .shmwrap{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:16px}
+  .shmwrap .alert{font-size:11px;color:var(--amber);margin-top:6px}
+  .shmwrap .ok{color:var(--green)}
+  .cert{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:16px}
+  .cert .st{font-size:12px;margin-bottom:8px}
+  .cert .st b{font-size:13px}
+  .btns{display:flex;gap:6px;flex-wrap:wrap}
+  button.b{background:#12324d;color:var(--ink);border:1px solid #244a6b;
+    border-radius:7px;padding:6px 10px;font-size:11px;cursor:pointer}
+  button.b:hover{background:#184268}
+  button.b:disabled{opacity:.4;cursor:not-allowed}
+  a.pdf{display:inline-block;margin-top:8px;font-size:11px;color:var(--accent);text-decoration:none}
+  .askbar{display:flex;gap:6px;margin-top:8px}
+  .askbar input{flex:1;background:#0a1420;border:1px solid var(--line);border-radius:7px;
+    color:var(--ink);padding:7px 10px;font-size:12px}
+  #answer{font-size:11px;color:var(--dim);margin-top:8px;white-space:pre-wrap;line-height:1.5}
 </style>
 </head>
 <body>
@@ -121,8 +141,20 @@
   <aside>
     <h2>Prescriptive plan · rupee ledger</h2>
     <div class="ledger" id="ledger"></div>
+    <h2>Spares to pre-stage (RUL-driven)</h2>
+    <div class="spares" id="spares"></div>
+    <h2>Between-inspection SHM · <span id="shmtail">—</span></h2>
+    <div class="shmwrap" id="shm"><p class="muted">select a tail</p></div>
     <h2>Open defects · this tail</h2>
     <div id="defects"><p class="muted">Loading…</p></div>
+    <h2>Certification &amp; tamper-evident evidence</h2>
+    <div class="cert" id="cert"></div>
+    <h2>MRO copilot (offline · tool-calling)</h2>
+    <div class="askbar">
+      <input id="ask" placeholder="e.g. what is the SRM limit for a crack at ATA 53?">
+      <button class="b" id="askbtn">Ask</button>
+    </div>
+    <div id="answer"></div>
   </aside>
 
   <div class="fleet" id="fleet"></div>
@@ -227,8 +259,16 @@ let selectedTail=null, tailData={}, groundedNow=false;
 
 async function loadFleet(){
   const f = await (await fetch('/api/fleet')).json();
-  renderLedger(f.plan.ledger); renderFleet(f.states);
+  renderLedger(f.plan.ledger); renderFleet(f.states); loadSpares();
   if(!selectedTail && f.states.length) selectTail(f.states[0].tail);
+}
+async function loadSpares(){
+  const s = await (await fetch('/api/spares')).json();
+  if(!s.orders.length){ $('#spares').innerHTML='<p class="muted">Nothing due within the horizon.</p>'; return; }
+  $('#spares').innerHTML = s.orders.map(o=>`<div class="sprow">
+    <span><b>${o.tail}</b> · ${o.kit}</span>
+    <span class="${o.grounded?'now':''}">${o.grounded?'ORDER NOW':'by '+o.order_by_cycle.toLocaleString()+' cyc'}</span>
+  </div>`).join('');
 }
 function renderLedger(lg){
   const carry = lg.aog_risk_carried ? `<div class="cell carry"><b>${inr(lg.aog_risk_carried)}</b><span>AOG risk carried (add a slot)</span></div>`:'';
@@ -259,9 +299,45 @@ async function selectTail(tail){
   const st = t.state||{};
   groundedNow = !!st.grounded;
   colorByHealth(st.health??100, groundedNow); accentDefects(t.defects);
-  renderBadge(st); renderDefects(t.defects);
+  renderBadge(st); renderDefects(t.defects); loadSHM(tail); renderCert(tail);
   document.querySelectorAll('.fcard').forEach(el=>el.classList.toggle('sel', el.dataset.tail===tail));
   $('#scrub').value=0; $('#scrubval').textContent='+0 cycles (now)'; $('#fleetstat').textContent='';
+}
+async function loadSHM(tail){
+  $('#shmtail').textContent = tail;
+  const d = await (await fetch('/api/shm/'+tail)).json();
+  const pts = d.series; const W=340,H=54;
+  const ymax=100, xmax=pts[pts.length-1].cycle||1;
+  const X=c=>4+(W-8)*(c/xmax), Y=v=>H-4-(H-8)*(v/ymax);
+  const poly=pts.map(p=>`${X(p.cycle).toFixed(1)},${Y(p.health).toFixed(1)}`).join(' ');
+  let mark='';
+  if(d.alert_cycle!=null){ const x=X(d.alert_cycle);
+    mark=`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#f6b73c" stroke-dasharray="3 2"/>`; }
+  const alert = d.alert_cycle!=null
+    ? `<div class="alert">⚠ CUSUM change-point alert @ +${d.alert_cycle.toLocaleString()} cyc — inspect before next scheduled check</div>`
+    : `<div class="alert ok">✓ signal stable — no between-inspection divergence</div>`;
+  $('#shm').innerHTML = `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+     ${mark}<polyline points="${poly}" fill="none" stroke="#37b3ff" stroke-width="2"/></svg>
+     <div class="muted">fused strain · acoustic-emission · vibration → health (simulated)</div>${alert}`;
+}
+async function renderCert(tail){
+  const wos = (await (await fetch('/api/workorders')).json()).work_orders;
+  const mine = Object.values(wos).find(w=>w.wo_id && tail && w.history);  // any (POC: one corpus)
+  const cur = mine? mine.status : null;
+  const step = {null:'not raised', DRAFT:'DRAFT — awaiting signature', SIGNED:'SIGNED — awaiting close', CLOSED:'CLOSED'}[cur];
+  $('#cert').innerHTML = `
+    <div class="st">Work order: <b>${mine?mine.wo_id:'—'}</b> · ${step}</div>
+    <div class="btns">
+      <button class="b" id="woOpen" ${cur?'disabled':''}>Draft</button>
+      <button class="b" id="woSign" ${cur==='DRAFT'?'':'disabled'}>Sign (cert. staff)</button>
+      <button class="b" id="woClose" ${cur==='SIGNED'?'':'disabled'}>Close</button>
+    </div>
+    <a class="pdf" href="/api/evidence.pdf" target="_blank">⤓ Tamper-evident evidence PDF (hash-chained)</a>`;
+  const post=(u)=>fetch(u,{method:'POST'}).then(()=>renderCert(tail));
+  const b=id=>$('#'+id);
+  if(b('woOpen')) b('woOpen').onclick=()=>post('/api/workorder/open?tail='+tail);
+  if(b('woSign')&&mine) b('woSign').onclick=()=>post('/api/workorder/sign?wo_id='+mine.wo_id);
+  if(b('woClose')&&mine) b('woClose').onclick=()=>post('/api/workorder/close?wo_id='+mine.wo_id);
 }
 function renderBadge(st){
   const c = '#'+healthColor(st.health??100, st.grounded).getHexString();
@@ -344,6 +420,18 @@ async function poll(){
   }catch(e){}
 }
 setInterval(poll, 1200); poll();
+
+// ---------- copilot ----------
+async function askCopilot(){
+  const q=$('#ask').value.trim(); if(!q) return;
+  $('#answer').textContent='…thinking';
+  const r=await (await fetch('/api/ask?question='+encodeURIComponent(q),{method:'POST'})).json();
+  let trace=(r.tool_trace||[]).map(t=>`  ↳ ${t.tool}(${JSON.stringify(t.args)})`).join('\n');
+  $('#answer').textContent = (r.answer||'') + (trace?('\n'+trace):'') +
+     (r.llm?'':'\n(Ollama offline — start it for prose; tools still callable)');
+}
+$('#askbtn').onclick=askCopilot;
+$('#ask').addEventListener('keydown',e=>{if(e.key==='Enter')askCopilot();});
 
 // ---------- pick + resize + animate ----------
 renderer.domElement.addEventListener('pointerdown', ev=>{
