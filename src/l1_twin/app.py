@@ -16,6 +16,7 @@ from pathlib import Path
 from fastapi import FastAPI, Response
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.gzip import GZipMiddleware
 
 from src.l0_detect.grade import grade_defect
 from src.l1_twin import db, federated, shm
@@ -29,6 +30,10 @@ from src.l3_agent.agent import draft_work_order
 STATIC = Path(__file__).resolve().parent / "static"
 MODEL_ASSETS = Path(__file__).resolve().parents[2] / "Airplane-body"
 app = FastAPI(title="AeroTwin-Edge - Digital Twin")
+# The airframe OBJ is ~12 MB of ASCII; gzip cuts it ~4-5x on the wire. Big win for the Pi's
+# slow SD-card/network read and for cold-load; near-zero cost on a laptop. (Parse time is
+# CPU-bound and unchanged — the honest bottleneck; a Draco-compressed GLB is the next step.)
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 if STATIC.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")
 if MODEL_ASSETS.exists():
@@ -133,7 +138,11 @@ def api_shm(tail: str) -> dict:
     """Between-inspection SHM: fused strain/AE/vibration + a CUSUM change alert."""
     rate, worst = _worst_growth_rate(tail)
     a0 = worst["size_mm"] if worst else 6.0
-    return {"tail": tail, "rate_mm_per_cyc": rate, **shm.shm_health(rate, a0_mm=a0)}
+    return {"tail": tail, "rate_mm_per_cyc": rate,
+            # honesty: the sensor stream is a physics-motivated SYNTHETIC signal; the
+            # EWMA+CUSUM change-detector running over it is a real, standard SHM algorithm.
+            "synthetic": True, "synthetic_note": "physics-motivated synthetic sensor stream; CUSUM detector is real",
+            **shm.shm_health(rate, a0_mm=a0)}
 
 
 @app.get("/api/spares")
@@ -193,7 +202,11 @@ def api_ask(question: str) -> dict:
 @app.get("/api/federated")
 def api_federated() -> dict:
     """ITAR-safe federated growth-prior simulation across hangars."""
-    return federated.simulate()
+    # honesty: the FedAvg + DP math is real; the per-site data is a SIMULATION of 4
+    # hangars drawing from one true distribution (there is no field federation yet).
+    return {"simulated": True,
+            "synthetic_note": "simulated 4-hangar federation; FedAvg + DP math is real",
+            **federated.simulate()}
 
 
 @app.get("/api/telemetry")

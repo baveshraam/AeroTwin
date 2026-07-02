@@ -15,6 +15,7 @@ models/weights/
 *.db
 *.sqlite
 data/twin.db
+data/audit_log.jsonl
 data/runs/
 data/raw/
 

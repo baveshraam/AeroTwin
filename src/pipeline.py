@@ -109,7 +109,9 @@ def run_scan(
         # Truth comes from what detect_defects() actually ran, not the requested mode —
         # `--real` silently falls back to mock when no weights/image are present, and
         # stamping "yolov8-seg" in that case would be a false claim, not a limitation.
-        "model_version": d.get("model_version", "mock-fixed"),
+        # The default is "mock-v0" because a detection dict with no model_version is an
+        # injected/seeded demo detection (seed_demo) — an intentional mock, not a fallback.
+        "model_version": d.get("model_version", "mock-v0"),
     }
     db.add_finding(finding)
 

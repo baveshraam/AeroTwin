@@ -53,10 +53,11 @@ def shm_health(rate_mm_per_cyc: float, a0_mm: float = 6.0, cycles: int = 6000,
                        "ae": round(float(ae[i]), 3), "freq_shift": round(float(freq[i]), 4),
                        "fused": round(float(fused[i]), 3), "health": health})
     return {"series": series, "alert_cycle": alert_cycle,
-            "health_now": series[-1]["health"], "baseline": round(base, 3),
-            # honest label so a judge reading the raw API response (not just the source
-            # comments) sees this: the CUSUM detector is real, the sensor stream is not.
-            "synthetic": True, "algorithm": "real (EWMA baseline + one-sided CUSUM)"}
+            "health_now": series[-1]["health"], "baseline": round(base, 3)}
+    # NOTE: the "synthetic": true honesty flag for /api/shm is stamped at the API layer
+    # in app.py (with a synthetic_note), not here -- one owner for that label avoids the
+    # dict-spread emitting two keys for the same fact. The stream being synthetic and the
+    # CUSUM detector being real is documented in this module's docstring + docs/honesty-qa.md.
 
 
 def _demo() -> None:

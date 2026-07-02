@@ -110,9 +110,10 @@ def simulate(seed: int = 0) -> dict:
             "cost_vs_plain": round(abs(dp["mean"] - glob["mean"]), 3),  # noise added by DP
         },
         "note": "Only (n, mean, var) left each hangar — no imagery, no per-tail record.",
-        # honest label so a judge reading the raw API response (not just the source
-        # comments) sees this: FedAvg/DP math is real, per-site growth rates are synthetic.
-        "synthetic": True, "algorithm": "real (FedAvg + Laplace-mechanism DP)",
+        # NOTE: the "simulated": true honesty flag for /api/federated is stamped at the API
+        # layer in app.py (with a synthetic_note), not here -- one owner for that label
+        # avoids emitting two keys for the same fact. That the FedAvg + DP math is real and
+        # the 4-hangar federation is simulated is in this docstring + docs/honesty-qa.md.
     }
 
 

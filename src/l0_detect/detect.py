@@ -22,14 +22,19 @@ WEIGHTS = Path(__file__).resolve().parents[2] / "models" / "weights" / "crack-se
 
 def detect_defects(image_path: str | None = None, mock: bool = False) -> list[dict]:
     """Detect defects in an image. Each item: {defect_type, mask_length_px, confidence,
-    model_version}. model_version is the source of truth for whether a real model
-    actually ran ("yolov8-seg") or the synthetic fallback fired ("mock-fixed") — callers
-    must not infer this from the `mock` argument, since `--real` silently falls back to
-    the mock detection whenever no weights are on disk or no image was given."""
+    model_version}. model_version is the source of truth for what actually ran — callers
+    must not infer it from the `mock` argument, since `--real` silently falls back to the
+    mock detection whenever no weights are on disk or no image was given:
+      * "yolov8-seg" — a real trained model actually ran inference
+      * "mock-v0"    — the intentional demo mock (mock=True, the default before training)
+      * "mock-fixed" — `--real` was asked but we fell back (no weights/image) — same fixed
+                       mock output, but flagged distinctly so a silent fallback shows up in
+                       logs/audit instead of hiding as a plain demo mock (and never a false
+                       "yolov8-seg" claim)."""
     if mock or not WEIGHTS.exists() or image_path is None:
         # Synthetic detection so the chain is runnable before a model exists.
         return [{"defect_type": "crack", "mask_length_px": 320.0, "confidence": 0.81,
-                 "model_version": "mock-fixed"}]
+                 "model_version": "mock-v0" if mock else "mock-fixed"}]
 
     from ultralytics import YOLO  # imported lazily so mock mode needs no heavy deps
 
