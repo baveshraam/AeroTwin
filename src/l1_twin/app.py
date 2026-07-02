@@ -50,8 +50,10 @@ def home() -> HTMLResponse:
 
 
 @app.get("/light", response_class=HTMLResponse)
-def home_light() -> HTMLResponse:
-    """Same dashboard, cream/white light-theme preview (chosen client-side from the path)."""
+@app.get("/dark", response_class=HTMLResponse)
+def home_theme() -> HTMLResponse:
+    """Same dashboard; theme is chosen client-side from the path. Light/cream is the default
+    at / (and /light); /dark opts into the dark-glass theme."""
     index = STATIC / "index.html"
     if index.exists():
         return HTMLResponse(index.read_text(encoding="utf-8"))
