@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AeroTwin · Structural Digital Twin</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='9' fill='%23e0842a'/></svg>">
 <script>/* light/cream is the default; /dark opts into the dark-glass theme (set before first paint) */
 if(location.pathname.replace(/\/+$/,'')!=='/dark')document.documentElement.className+='light';</script>
 <style>
@@ -799,7 +800,11 @@ $('#wDefer').onchange=runWhatif; $('#wCap').onchange=runWhatif;
 
 async function selectTail(tail){
   selectedTail=tail; $('#defTail').textContent=tail;
-  const t=await jf('/api/tail/'+tail); tailData[tail]=t;
+  let t;
+  try{ t=await jf('/api/tail/'+tail); }
+  catch(e){ $('#defects').innerHTML='<p class="muted">⚠ Can\'t load '+tail+' — is the twin API up?</p>';
+    $('#shm').innerHTML='<p class="muted">unavailable</p>'; return; }
+  tailData[tail]=t;
   clearHotspots(); (t.defects||[]).forEach(addHotspot);
   const st=t.state||{};
   tintByHealth(st.health??100, !!st.grounded);
@@ -881,7 +886,9 @@ async function loadSHM(tail){
     <div class="desc">Fused strain · acoustic-emission · vibration → damage index (synthetic edge stream, EWMA+CUSUM).</div>${alert}`;
 }
 async function renderCert(tail){
-  const wos=(await jf('/api/workorders')).work_orders||{};
+  let wos;
+  try{ wos=(await jf('/api/workorders')).work_orders||{}; }
+  catch(e){ $('#cert').innerHTML='<p class="muted">certification service unavailable</p>'; return; }
   const mine=Object.values(wos).find(w=>w&&w.wo_id&&w.history);
   const cur=mine?mine.status:null;
   const label={DRAFT:'DRAFT — awaiting signature',SIGNED:'SIGNED — awaiting close',CLOSED:'CLOSED'}[cur]||'not raised';
@@ -921,13 +928,18 @@ $('#scrub').addEventListener('input',e=>{
   clearTimeout(scrubTimer); scrubTimer=setTimeout(()=>scrubTo(cyc),50);
 });
 async function scrubTo(cyc){
-  const r=await jf('/api/scrub?cycles='+cyc);
+  let r;
+  try{ r=await jf('/api/scrub?cycles='+cyc); }
+  catch(e){ $('#fleetStat').innerHTML='<b style="color:var(--red)">⚠ scrub unavailable</b>'; return; }
   renderLedger(r.plan.ledger); renderBoard(r.plan.plan, r.states);
   const st=r.states.find(s=>s.tail===selectedTail);
   if(st){ tintByHealth(st.health,st.grounded); renderBadge(st); }
   r.states.forEach(s=>{ const el=document.querySelector(`.fcard[data-tail="${s.tail}"]`); if(!el)return;
     const hot=attn(s.health,s.grounded);
     el.classList.toggle('attn',hot);
+    // keep the strip's TEXT + grounded pill in sync with the scrub, not just the bar
+    const ft=el.querySelector('.ft'); if(ft) ft.innerHTML=`${s.tail}${s.grounded?'<span class="pill">GROUNDED</span>':''}`;
+    const fm=el.querySelector('.fm'); if(fm) fm.textContent=s.grounded?'beyond limit':s.health+'/100 · '+s.open_defects+' open';
     const bar=el.querySelector('.hbar>div'); bar.style.width=Math.max(s.health,4)+'%';
     bar.style.background=sevCol(s.health,s.grounded); });
   const gnd=r.states.filter(s=>s.grounded).length;
