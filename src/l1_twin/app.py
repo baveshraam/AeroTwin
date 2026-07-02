@@ -16,6 +16,7 @@ from pathlib import Path
 from fastapi import FastAPI, Response
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.gzip import GZipMiddleware
 
 from src.l0_detect.grade import grade_defect
 from src.l1_twin import db, federated, shm
@@ -29,6 +30,10 @@ from src.l3_agent.agent import draft_work_order
 STATIC = Path(__file__).resolve().parent / "static"
 MODEL_ASSETS = Path(__file__).resolve().parents[2] / "Airplane-body"
 app = FastAPI(title="AeroTwin-Edge - Digital Twin")
+# The airframe OBJ is ~12 MB of ASCII; gzip cuts it ~4-5x on the wire. Big win for the Pi's
+# slow SD-card/network read and for cold-load; near-zero cost on a laptop. (Parse time is
+# CPU-bound and unchanged — the honest bottleneck; a Draco-compressed GLB is the next step.)
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 if STATIC.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")
 if MODEL_ASSETS.exists():

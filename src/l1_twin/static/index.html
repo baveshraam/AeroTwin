@@ -316,6 +316,16 @@ if(location.pathname.replace(/\/+$/,'')!=='/dark')document.documentElement.class
   .fcard .pill{font-size:8px;font-weight:700;padding:2px 7px;border-radius:5px;letter-spacing:.5px;
     color:#fff;background:var(--red);box-shadow:0 0 10px var(--red-3)}
   .muted{color:var(--ink-3);font-size:11px}
+  /* 3D-model load state — so the ~12MB airframe never looks like a frozen/blank stage
+     (matters most on the Pi's slow SD read); fades out the instant the mesh is in */
+  .loadmsg{top:50%;left:calc(50% - 200px);transform:translate(-50%,-50%);display:flex;align-items:center;gap:12px;
+    font-size:12px;color:var(--ink-2);letter-spacing:.3px;transition:opacity .5s;z-index:2}
+  .loadmsg.err{color:var(--red)}
+  .loadmsg.gone{opacity:0;pointer-events:none}
+  .loadmsg .spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);
+    border-top-color:var(--accent);animation:spin 0.8s linear infinite}
+  .loadmsg.err .spin{display:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
   .fade-in{animation:fade .4s ease}
   @keyframes fade{from{opacity:0}to{opacity:1}}
   /* ============ LIGHT THEME (cream/white) — /light preview ============ */
@@ -377,12 +387,14 @@ if(location.pathname.replace(/\/+$/,'')!=='/dark')document.documentElement.class
     <div class="brand"><span class="dot"></span><b>AeroTwin</b><s>·Edge</s></div>
     <span class="tag">Offline structural digital twin</span>
     <span class="tag">ITAR-safe · Raspberry Pi 5</span>
+    <span class="synthflag" id="dataBadge" hidden></span>
     <div class="hud" id="hud"></div>
     <div class="flow">PREDICT · PRESCRIBE · PRICE</div>
   </header>
 
   <div id="stage">
     <canvas id="canvas"></canvas>
+    <div class="overlay loadmsg" id="loadmsg"><span class="spin"></span><span id="loadtxt">Loading airframe…</span></div>
 
     <div class="overlay badge" id="badge">
       <div class="ring">
@@ -591,16 +603,13 @@ const FL=10, R=0.72;
 const plane = new THREE.Group(); scene.add(plane);
 const skinParts=[];
 let modelReady=false;
-// nose at +x (t->1), tail cone at -x (t->0) — approximate radius profile, used ONLY to
-// place defect hotspots near the surface (the visible mesh comes from the OBJ).
-function radiusAt(t){
-  if(t>=0.86){ const u=(1-t)/0.14; return R*Math.sqrt(Math.max(u,0)); }   // nose
-  if(t<=0.20){ const u=t/0.20;     return R*Math.pow(Math.max(u,0),0.82); } // tail cone
-  return R;
-}
-const xToT = x => (x + FL/2)/FL;
+// (defect hotspots are snapped to the real mesh by raycasting — see skinPointFor below;
+//  the old procedural radius profile is gone.)
 
 // load the textured airframe — offline (vendored MTL/OBJ loaders + local /model-assets)
+const _loadmsg=$('#loadmsg'), _loadtxt=$('#loadtxt');
+function loadDone(){ if(_loadmsg) _loadmsg.classList.add('gone'); }
+function loadFail(msg){ if(_loadmsg){ _loadmsg.classList.add('err'); if(_loadtxt) _loadtxt.textContent=msg; } }
 (function loadAirframe(){
   const mtl=new THREE.MTLLoader(); mtl.setPath('/model-assets/');
   mtl.load('airplane.mtl', materials=>{
@@ -624,15 +633,24 @@ const xToT = x => (x + FL/2)/FL;
       plane.add(o); modelReady=true;
       // frame the whole airframe: sit the orbit target on its centre so it never drifts off-screen
       controls.target.set(0,0,0); controls.update();
-    });
-  });
+      replaceHotspots();   // markers were placed (or skipped) before the mesh existed — snap them now
+      loadDone();          // mesh is in — drop the loading overlay
+    },
+    xhr=>{ if(_loadtxt && xhr && xhr.lengthComputable)
+             _loadtxt.textContent='Loading airframe… '+(xhr.loaded/1048576).toFixed(1)+'/'+(xhr.total/1048576).toFixed(1)+' MB'; },
+    ()=>loadFail('⚠ airframe model failed to load'));
+  }, undefined, ()=>loadFail('⚠ airframe materials failed to load'));
 })();
 
 // ============================ defect hotspots (single accent, size = severity) ============================
 let hotspots=[]; const raycaster=new THREE.Raycaster();
-// hotspot markers are hidden for now — their placement still uses the old procedural
-// fuselage math, so on the new model they float off-skin. Re-enable once recalibrated.
-const SHOW_HOTSPOTS=false;
+// Markers are snapped to the ACTUAL loaded mesh by raycasting — no procedural-fuselage
+// guesswork. Per defect we pick a longitudinal X and an upper-hemisphere angle, find the
+// real fuselage axis at that X with two vertical probe rays, then cast outward from the axis
+// and place the marker exactly where the ray meets the real skin. On-surface for any model.
+const SHOW_HOTSPOTS=true;
+const _probe=new THREE.Raycaster();
+const _Z=new THREE.Vector3(0,0,1);
 // soft amber halo that reads on WHITE — normal blending AND depth-tested so it is
 // correctly OCCLUDED by the airframe (no more glow floating outside the plane on orbit)
 function glowSprite(){
@@ -644,25 +662,53 @@ function glowSprite(){
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,
     depthWrite:false,depthTest:true})); return s;
 }
-function segAngle(loc){ const n=parseInt((loc||'').replace(/\D/g,''))||0; return (n%12)/12*Math.PI*2; }
-function defectX(loc){ const n=parseInt((loc||'').replace(/\D/g,''))||0; return 3.0-(n%14)*0.55; }
+// upper-hemisphere angle (top + upper sides) so markers stay on the visible fuselage and
+// never land under a wing or on the belly; longitudinal X kept clear of the tail fin.
+function segAngle(loc){ const n=parseInt((loc||'').replace(/\D/g,''))||0; return ((n%12)/12-0.5)*2.1; }
+function defectX(loc){ const n=parseInt((loc||'').replace(/\D/g,''))||0; return 2.6-(n%12)*0.5; }
+function _probeY(x,fromY,dir){   // vertical probe ray at (x,·,0) -> first skin hit's Y
+  _probe.set(new THREE.Vector3(x,fromY,0), new THREE.Vector3(0,dir,0));
+  const h=_probe.intersectObjects(skinParts,true)[0]; return h?h.point.y:null;
+}
+function fuselageAxisAt(x){   // tube centre + radius at station x, from top-down + bottom-up probes
+  const top=_probeY(x,60,-1), bot=_probeY(x,-60,1);
+  if(top==null||bot==null) return null;
+  return {y:(top+bot)/2, r:Math.max((top-bot)/2,0.05)};
+}
+// world-space skin point + outward normal for a defect, raycast against the real mesh
+function skinPointFor(def){
+  const x=defectX(def.location), ang=segAngle(def.location);
+  const dir=new THREE.Vector3(0,Math.cos(ang),Math.sin(ang)).normalize();
+  const ax=modelReady && fuselageAxisAt(x);
+  if(ax){
+    _probe.set(new THREE.Vector3(x,ax.y,0), dir);
+    const h=_probe.intersectObjects(skinParts,true)[0];
+    if(h){ const nrm=h.face? h.face.normal.clone().transformDirection(h.object.matrixWorld).normalize():dir.clone();
+      return {pos:h.point.clone(), nrm}; }
+    return {pos:new THREE.Vector3(x,ax.y,0).add(dir.clone().multiplyScalar(ax.r)), nrm:dir.clone()};
+  }
+  return {pos:new THREE.Vector3(x,Math.cos(ang)*R,Math.sin(ang)*R), nrm:dir.clone()};  // pre-load fallback
+}
 function clearHotspots(){ hotspots.forEach(h=>plane.remove(h.grp)); hotspots=[]; }
 function addHotspot(def){
-  if(!SHOW_HOTSPOTS) return;   // no floating glow until markers are recalibrated to the model
-  const x=defectX(def.location),t=xToT(x),r=radiusAt(t),ang=segAngle(def.location);
-  const ny=Math.cos(ang),nz=Math.sin(ang);           // outward surface normal (yz plane)
-  const y=ny*(r+0.015),z=nz*(r+0.015);
+  if(!SHOW_HOTSPOTS) return;
+  const {pos,nrm}=skinPointFor(def);
   const sz=GRADE_SIZE[def.grade]||0.7;
-  const grp=new THREE.Group(); grp.position.set(x,y,z);
-  // ring marker painted flat on the skin — conforms to the surface, occludes naturally
+  const grp=new THREE.Group(); grp.position.copy(pos).add(nrm.clone().multiplyScalar(0.012));
+  // ring painted flat on the skin — oriented to the real surface normal, occludes naturally
   const ring=new THREE.Mesh(new THREE.RingGeometry(0.085*sz+0.02,0.13*sz+0.03,30),
     new THREE.MeshBasicMaterial({color:ACCENT,transparent:true,opacity:0.9,side:THREE.DoubleSide,depthWrite:false}));
-  ring.lookAt(0, ny, nz);   // face the outward surface normal (ring is at local origin here)
+  ring.quaternion.setFromUnitVectors(_Z, nrm.clone().normalize());   // +Z of the ring -> surface normal
   const core=new THREE.Mesh(new THREE.SphereGeometry(0.045*sz+0.028,18,18),
     new THREE.MeshStandardMaterial({color:ACCENT,emissive:ACCENT,emissiveIntensity:1.3,metalness:0.1,roughness:0.45}));
   const halo=glowSprite(); const base=0.55*sz+0.26; halo.scale.setScalar(base);
   grp.add(ring); grp.add(core); grp.add(halo); plane.add(grp);
-  hotspots.push({grp,core,halo,ring,def,base});
+  hotspots.push({grp,core,halo,ring,def,base,pos:grp.position.clone(),nrm});
+}
+// re-place the current tail's markers on the real mesh (called once the OBJ finishes loading)
+function replaceHotspots(){
+  if(!selectedTail||!tailData[selectedTail]) return;
+  clearHotspots(); (tailData[selectedTail].defects||[]).forEach(addHotspot);
 }
 
 // ============================ health tint (animated) ============================
@@ -865,12 +911,12 @@ function spark(d){
 function focusDefect(i){
   document.querySelectorAll('.defect').forEach((e,j)=>e.classList.toggle('sel',i===j));
   hotspots.forEach((h,j)=>h.selected=(j===i));
-  const d=tailData[selectedTail].defects[i]; const x=defectX(d.location);
-  const t=xToT(x),r=radiusAt(t),ang=segAngle(d.location);
-  flyTo(x, Math.cos(ang)*(r+0.02), Math.sin(ang)*(r+0.02));
+  const h=hotspots[i];   // fly the orbit target to the marker's real on-skin position
+  if(h&&h.pos) flyTo(h.pos.x, h.pos.y, h.pos.z);
 }
 async function loadSHM(tail){
-  const d=await jf('/api/shm/'+tail); const pts=d.series||[];
+  let d; try{ d=await jf('/api/shm/'+tail); }catch(e){ $('#shm').innerHTML='<p class="muted">unavailable</p>'; return; }
+  const pts=d.series||[];
   if(!pts.length){ $('#shm').innerHTML='<p class="muted">no signal</p>'; return; }
   const W=360,H=48, xmax=pts[pts.length-1].cycle||1;
   const X=c=>2+(W-4)*(c/xmax), Y=v=>H-4-(H-8)*(v/100);
