@@ -20,12 +20,16 @@ CORPUS = Path(__file__).resolve().parents[2] / "data" / "manuals" / "srm_53-30.m
 
 
 def retrieve(defect_type: str, ata_zone: str) -> list[str]:
-    """Tiny RAG: return manual paragraphs mentioning the defect type or ATA zone."""
+    """Tiny RAG: return manual paragraphs mentioning BOTH the defect type and this ATA
+    zone. Matching on defect_type alone would let a multi-zone corpus hand back the
+    wrong zone's excerpt (right citation number, wrong pasted limit) — require both."""
     if not CORPUS.exists():
         return []
     text = CORPUS.read_text(encoding="utf-8")
-    needles = (defect_type.lower(), f"ata {ata_zone}".lower(), f"{ata_zone}-".lower())
-    return [p.strip() for p in text.split("\n\n") if any(n in p.lower() for n in needles)]
+    defect_needle = defect_type.lower()
+    zone_needles = (f"ata {ata_zone}".lower(), f"{ata_zone}-".lower())
+    return [p.strip() for p in text.split("\n\n")
+            if defect_needle in p.lower() and any(z in p.lower() for z in zone_needles)]
 
 
 def draft_work_order(finding: dict, grade: dict, progression: str) -> dict:

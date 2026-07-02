@@ -171,15 +171,33 @@ markers **on the skin**, not floating. **Key visual finding:** a near-white airf
 invisible against the light stage (white-on-white) — the fix was a mid silver-grey `#aeb7c2` airframe
 plus a close low side-quarter hero framing so the fuselage/windows/wing fill the frame and read.
 
+## 3e. Session 5 (2026-07-03) — registration-readiness pass: honesty audit, real training, real LLM
+
+Directive: finish the project for July 5 registration. Sync a teammate's UI push, then a
+priority-ordered pass — fix the most damaging honesty gap first, start real training, get
+a real LLM running, audit every "simulated" label end-to-end, fix hotspot placement math,
+clean up, update docs. UI/`static/` was explicitly off-limits this session.
+
+| Priority | Status | Where / notes |
+|---|---|---|
+| **P0 — `model_version` dishonesty** | ✅ fixed | `detect_defects()` in [detect.py](../src/l0_detect/detect.py) now stamps `model_version` itself based on what actually ran (`"yolov8-seg"` only after a real model inference, `"mock-fixed"` on any fallback) — [pipeline.py](../src/pipeline.py) reads that instead of inferring from the `--real` flag, which previously stamped `"yolov8-seg"` even when the mock path silently fired. Verified: `--real` with no weights now correctly logs `mock-fixed`. |
+| **P1 — real crack-seg training** | 🔄 running | This machine has a CUDA GPU (RTX 4060, 8GB) unlike the prior CPU-only session. Found and fixed a real bug on the way: `fetch_datasets.py` never redirected ultralytics' dataset cache, so `crack-seg` was landing in a stray top-level `datasets/` instead of `data/datasets/` — consolidated, fixed the script, added `/datasets/` to `.gitignore`. Kicked off `yolov8s-seg`, imgsz 1280, 40 epochs (had to restart once — the script's batch=8 default was pinning 97% VRAM and would've taken ~22hrs; batch=6 is the safe setting). ArUco sizing path independently re-verified: real marker → 0.2513 mm/px, no marker → correct 0.025 fallback. |
+| **P2 — real local LLM** | ✅ done, with a caveat | Ollama installed and running. **Found: `phi3` (the code's original default) cannot do tool-calling at all** — confirmed live, Ollama 400s with `"does not support tools"`. Switched `OLLAMA_MODEL` default to `llama3.2:3b`, verified real tool-calling end-to-end (SRM limit / RUL / tail-state questions all trigger genuine calls into the twin). **Found and fixed a second gap**: the LLM fabricated a citation ("SRM-001, Section 5.3.1" — doesn't exist) for a plain RUL question involving no citation at all — the citation guardrail only covered `draft_with_copilot()`'s work-order path, not the general `ask()` chat path. Added `_drop_uncited_srm()` mirroring the same guardrail, self-checked deterministically. **Known limitation, not patched further**: tool-calling isn't fully reliable even on a supported model — re-running an identical question 3x, it worked once and twice returned malformed pseudo-JSON as plain text. Inherent small-model behavior; the guardrails exist because of this, not instead of it. |
+| **P3 — synthetic/simulated labeling audit** | ✅ fixed | `/api/telemetry` already had `simulated: true`. `/api/shm/{tail}` and `/api/federated` did NOT — real-looking numbers with no machine-readable honesty flag, despite both docstrings already saying "synthetic". Added `synthetic: true` + an `algorithm` note to both [shm.py](../src/l1_twin/shm.py) and [federated.py](../src/l1_twin/federated.py), verified live via the running API. **One gap left for the UI owner**: the telemetry HUD's simulated flag only reaches the screen as a bare `*` with no legend — easy to miss, not fixed here since it's inside `static/index.html`. |
+| **P4 — hotspot placement math** | 🤝 handed off | Parsed `Airplane-body/airplane.obj` directly: it has named sub-groups, and `11803_Airplane_body` is the real fuselage-only mesh (wings/tail/nacelles are separate groups). Fit a real per-position radius profile from the actual mesh (replicating `loadAirframe()`'s exact rotate/scale/center transform) — the old constant `R=0.72` + guessed taper curve was off by up to 0.42 world units at the nose/tail. Wrote [tools/fit_hotspot_radius.py](../tools/fit_hotspot_radius.py) (self-checked, reproducible) that prints the exact replacement code. Not applied to `static/index.html` directly (off-limits this session) — paste-and-verify is still open. |
+| **P5 — cleanup** | ✅ done | Removed an unused import (`copilot.py`), two harmless f-string lints, one unused variable, a stray unreferenced 5.5MB model file, and a duplicate ~127MB dataset download. Added the genuinely-missing `scikit-learn` to `requirements.txt` (used directly by `train_anomaly.py`, not covered transitively by ultralytics) and removed two declared-but-never-imported deps (`jinja2`, `python-dateutil`). Investigated and deliberately kept `tools/train_anomaly.py` (real MVTec AUROC validator, not redundant with `anomaly.py`) and `tools/render_dashboard.py` (documented fallback demo path in the submission runbook). |
+| **P6 — docs accuracy** | ✅ this entry | README gained a "what's real vs. simulated" status table and two corrections (missing `anomaly.py` in the file layout; Ollama wrongly attributed to `agent.py` instead of `copilot.py`). Both docs' `ollama pull phi3` instruction corrected to `llama3.2:3b` (phi3 can't do tool-calling — same finding as P2). |
+
 ## 4. What's still open
 
-**Base crack training is validated and runnable** (session 2); the remaining depth is the
-**on-domain aircraft fine-tune**, which needs gated data:
+**Base crack training is validated and, as of session 5, actually running to convergence**
+on a GPU (`yolov8s-seg`, imgsz 1280, 40 epochs) — see 3e above for live status. The
+remaining depth is the **on-domain aircraft fine-tune**, which needs gated data:
 1. Free-tier account signups (IEEE DataPort for Aircraft_Fuselage_DET2023, Kaggle for
    Severstal, Roboflow API key for the aircraft-skin sets) — these gate `--stage adapt`.
-2. Full base run to convergence: `python tools/train.py --stage base --model yolov8n-seg.pt`
-   (CPU) or `--model yolov8s-seg.pt` on a GPU. Then `--deploy-base` so `--real` uses it,
-   `--export` for INT8 ONNX, `python -m src.pipeline --image <panel.jpg> --real`.
+2. Once the base run finishes: `--deploy-base` so `--real` uses it, `--export` for INT8
+   ONNX, `python -m src.pipeline --image <panel.jpg> --real` — confirm it's genuinely
+   detecting (not just running) before calling this done.
 3. `--stage adapt --data data/datasets/aircraft/data.yaml` once the gated aircraft set is
    pulled → promotes to `crack-seg.pt` (the on-domain flagship).
 4. ✅ **Anomaly branch is now coded** ([src/l0_detect/anomaly.py](../src/l0_detect/anomaly.py),
@@ -220,8 +238,10 @@ python tools/train.py --stage adapt --data data/datasets/aircraft/data.yaml
 python tools/train.py --export                # INT8 ONNX for the Pi
 ```
 
-Optional local LLM copilot: install Ollama, `ollama pull phi3`, then the "MRO copilot"
-box in the UI (or `POST /api/ask`) gets real prose instead of the tool-only fallback.
+Optional local LLM copilot: install Ollama, `ollama pull llama3.2:3b` (must be a
+tool-calling-capable model — confirmed live that `phi3` is NOT and Ollama 400s on it),
+then the "MRO copilot" box in the UI (or `POST /api/ask`) gets real prose instead of
+the tool-only fallback.
 
 ## 6. File map (everything touched this session)
 
