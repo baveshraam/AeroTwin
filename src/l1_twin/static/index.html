@@ -573,6 +573,9 @@ const xToT = x => (x + FL/2)/FL;
 
 // ============================ defect hotspots (single accent, size = severity) ============================
 let hotspots=[]; const raycaster=new THREE.Raycaster();
+// hotspot markers are hidden for now — their placement still uses the old procedural
+// fuselage math, so on the new model they float off-skin. Re-enable once recalibrated.
+const SHOW_HOTSPOTS=false;
 // soft amber halo that reads on WHITE — normal blending AND depth-tested so it is
 // correctly OCCLUDED by the airframe (no more glow floating outside the plane on orbit)
 function glowSprite(){
@@ -588,6 +591,7 @@ function segAngle(loc){ const n=parseInt((loc||'').replace(/\D/g,''))||0; return
 function defectX(loc){ const n=parseInt((loc||'').replace(/\D/g,''))||0; return 3.0-(n%14)*0.55; }
 function clearHotspots(){ hotspots.forEach(h=>plane.remove(h.grp)); hotspots=[]; }
 function addHotspot(def){
+  if(!SHOW_HOTSPOTS) return;   // no floating glow until markers are recalibrated to the model
   const x=defectX(def.location),t=xToT(x),r=radiusAt(t),ang=segAngle(def.location);
   const ny=Math.cos(ang),nz=Math.sin(ang);           // outward surface normal (yz plane)
   const y=ny*(r+0.015),z=nz*(r+0.015);
@@ -928,7 +932,7 @@ function resize(){ const w=$('#stage').clientWidth,h=$('#stage').clientHeight;
   // keep the aircraft centred in the OPEN area (not behind the floating panels): shift the
   // frustum left of the right data-panel (~406px) and up out of the bottom scrub+fleet (~250px).
   const occX = w>940 ? 200 : 0;                // +x shifts the jet left of the right data-panel
-  const occY = h>620 ? Math.round(h*0.12) : 0; // +y lifts the jet up out of the bottom scrub+fleet
+  const occY = h>620 ? Math.round(h*0.18) : 0; // +y lifts the jet up out of the bottom scrub+fleet
   camera.setViewOffset(w,h, occX, occY, w, h);
   camera.updateProjectionMatrix(); }
 window.addEventListener('resize',resize); resize();
