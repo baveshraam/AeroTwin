@@ -49,6 +49,15 @@ def home() -> HTMLResponse:
     return HTMLResponse(render_home())  # fallback until the 3D page is vendored
 
 
+@app.get("/light", response_class=HTMLResponse)
+def home_light() -> HTMLResponse:
+    """Same dashboard, cream/white light-theme preview (chosen client-side from the path)."""
+    index = STATIC / "index.html"
+    if index.exists():
+        return HTMLResponse(index.read_text(encoding="utf-8"))
+    return HTMLResponse(render_home())
+
+
 @app.get("/classic", response_class=HTMLResponse)
 def classic() -> str:
     return render_home()

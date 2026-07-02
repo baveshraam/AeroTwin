@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AeroTwin · Structural Digital Twin</title>
+<script>/* pick theme from the path before first paint (no flash): /light -> cream/white */
+if(location.pathname.replace(/\/+$/,'')==='/light')document.documentElement.className+='light';</script>
 <style>
   :root{
     /* ---- dark glass base (near-black, cool) ---- */
@@ -90,6 +92,7 @@
     animation:glassIn .55s cubic-bezier(.2,.75,.2,1) both;transition:translate .3s ease-out}
   .ring{position:relative;width:64px;height:64px;flex:0 0 auto}
   .ring svg{transform:rotate(-90deg)}
+  .ring .ringbg{stroke:var(--line)}
   .ring .rv{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
   .ring .rv b{font-size:20px;font-family:var(--mono);line-height:1;font-weight:600}
   .ring .rv span{font-size:7px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1.4px;margin-top:3px}
@@ -314,6 +317,42 @@
   .muted{color:var(--ink-3);font-size:11px}
   .fade-in{animation:fade .4s ease}
   @keyframes fade{from{opacity:0}to{opacity:1}}
+  /* ============ LIGHT THEME (cream/white) — /light preview ============ */
+  html.light{
+    --bg:#efece4;                 /* warm cream base */
+    --bg-2:#e5e1d7;
+    --ink:#1c2026;                /* near-black ink */
+    --ink-2:rgba(28,32,38,.66);
+    --ink-3:rgba(28,32,38,.44);
+    --ink-4:rgba(28,32,38,.26);
+    --line:rgba(28,32,38,.12);
+    --line-2:rgba(28,32,38,.06);
+    --panel:rgba(28,32,38,.03);
+    --glass:rgba(255,255,255,.55);       /* frosted WHITE over the cream base */
+    --glass-2:rgba(255,255,255,.74);
+    --glass-border:rgba(255,255,255,.9);
+    --glass-blur:blur(20px) saturate(135%);
+    --surface:rgba(255,255,255,.62);
+    --hi:inset 0 1px 0 rgba(255,255,255,.95);
+    --lo:inset 0 -1px 0 rgba(28,32,38,.05);
+    --shadow:0 1px 2px rgba(20,24,31,.05),0 10px 30px rgba(20,24,31,.08);
+    --shadow-lg:0 2px 8px rgba(20,24,31,.06),0 22px 55px rgba(20,24,31,.13);
+    --neu-out:-3px -3px 8px rgba(255,255,255,.9),4px 4px 12px rgba(28,32,38,.12);
+    --neu-in:inset 2px 2px 6px rgba(28,32,38,.1),inset -2px -2px 6px rgba(255,255,255,.9);
+    --cyan:#0fb5a6; --amber:#e0842a; --red:#e0455a;
+    --accent-2:rgba(224,132,42,.16); --accent-3:rgba(224,132,42,.08);
+    --cyan-3:rgba(15,181,166,.12); --red-3:rgba(224,69,90,.12);
+  }
+  html.light body{color:var(--ink)}
+  html.light #stage{background:radial-gradient(1300px 950px at 50% 40%,#ffffff 0%,#f0ece4 52%,#dcd6c9 100%)}
+  /* tracks + hovers that were white-on-dark need to flip to ink-on-light */
+  html.light .minibar,html.light .bandbar,html.light .fcard .hbar,
+  html.light .fed .st .bar,html.light .scrub input[type=range]{background:rgba(28,32,38,.10)}
+  html.light .fed .st .bar>i{background:rgba(28,32,38,.34)}
+  html.light .brow:hover,html.light .fcard:hover{background:rgba(28,32,38,.045)}
+  html.light .askbar input{background:rgba(28,32,38,.05)}
+  html.light .wctl select option{background:#ffffff;color:var(--ink)}
+
   /* entrance: panels blur/scale in from a nearer depth plane */
   @keyframes glassIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
@@ -335,7 +374,7 @@
     <div class="overlay badge" id="badge">
       <div class="ring">
         <svg width="64" height="64" viewBox="0 0 64 64">
-          <circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="3"/>
+          <circle class="ringbg" cx="32" cy="32" r="27" fill="none" stroke-width="3"/>
           <circle id="ringArc" cx="32" cy="32" r="27" fill="none" stroke="var(--ink)" stroke-width="3"
             stroke-linecap="round" stroke-dasharray="170" stroke-dashoffset="170"
             style="transition:stroke-dashoffset .6s,stroke .6s"/>
@@ -442,6 +481,11 @@
 <script>
 // ============================ helpers ============================
 const $ = s => document.querySelector(s);
+// ---- theme (dark default; /light serves a cream/white preview) ----
+const THEME = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+const SCENE = THEME==='light'
+  ? {fog:[0xe3e7ee,0.008], env:['#ffffff','#eef1f6','#dbe2ec'], floor:0xe9edf3, grid:[0xccd2db,0xe0e4ea], gridOp:0.6,  ink:'#3b434f', exposure:1.0}
+  : {fog:[0x081019,0.011], env:['#43505f','#1d2833','#0b131c'], floor:0x0a1119, grid:[0x2a3b4d,0x18242f], gridOp:0.55, ink:'#aab3c0', exposure:1.02};
 const inr = n => n>=1e7 ? '₹'+(n/1e7).toFixed(2)+' Cr' : n>=1e5 ? '₹'+(n/1e5).toFixed(1)+' L'
   : '₹'+Math.round(n||0).toLocaleString('en-IN');
 // ---- count-up: hero figures ease to their new value instead of snapping ----
@@ -455,7 +499,7 @@ function tweenNum(el,to,fmt,dur=680){
 }
 const tweenMoney = (el,to)=>tweenNum(el,to,inr);
 const tweenInt   = (el,to)=>tweenNum(el,to,v=>Math.round(v).toString());
-const ACCENT = '#e0842a', INK = '#aab3c0';          // INK now light — sparklines read on the dark base
+const ACCENT = '#e0842a', INK = SCENE.ink;          // sparkline ink adapts to the theme
 const CYAN = '#35e0d0', AMBER = '#f2a93b', RED = '#ff5b6a';
 // livery base — light silver-grey; reads as a lit airframe against the dark hangar
 const LIVERY = new THREE.Color('#aeb7c2');
@@ -471,12 +515,12 @@ const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.02;
+renderer.toneMappingExposure = SCENE.exposure;
 renderer.physicallyCorrectLights = true;
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x081019, 0.011);   // dark hangar haze
+scene.fog = new THREE.FogExp2(SCENE.fog[0], SCENE.fog[1]);   // hangar haze (per theme)
 
 const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
 camera.position.set(7.5, 3.9, 16.5);   // side-quarter hero framing the whole airframe
@@ -490,8 +534,8 @@ controls.autoRotate = true; controls.autoRotateSpeed = 0.16;
 function gradientTexture(){
   const c=document.createElement('canvas'); c.width=16; c.height=256;
   const ctx=c.getContext('2d'); const g=ctx.createLinearGradient(0,0,0,256);
-  // cool, moody env — soft top light for a lit-metal highlight, dark toward the floor
-  g.addColorStop(0,'#43505f'); g.addColorStop(.58,'#1d2833'); g.addColorStop(1,'#0b131c');
+  // env gradient tunes the metal reflection to the theme (soft top light -> darker floor)
+  g.addColorStop(0,SCENE.env[0]); g.addColorStop(.58,SCENE.env[1]); g.addColorStop(1,SCENE.env[2]);
   ctx.fillStyle=g; ctx.fillRect(0,0,16,256);
   const t=new THREE.CanvasTexture(c); t.mapping=THREE.EquirectangularReflectionMapping; return t;
 }
@@ -512,10 +556,10 @@ const rim  = new THREE.DirectionalLight(0xffffff, 0.30); rim.position.set(2,4,-9
 
 // light floor + soft grid + contact shadow
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(140,140),
-  new THREE.MeshStandardMaterial({color:0x0a1119, metalness:0.0, roughness:0.92}));
+  new THREE.MeshStandardMaterial({color:SCENE.floor, metalness:0.0, roughness:0.92}));
 floor.rotation.x=-Math.PI/2; floor.position.y=-1.55; floor.receiveShadow=true; scene.add(floor);
-const grid = new THREE.GridHelper(64,64,0x2a3b4d,0x18242f); grid.position.y=-1.548;
-grid.material.transparent=true; grid.material.opacity=0.55; scene.add(grid);
+const grid = new THREE.GridHelper(64,64,SCENE.grid[0],SCENE.grid[1]); grid.position.y=-1.548;
+grid.material.transparent=true; grid.material.opacity=SCENE.gridOp; scene.add(grid);
 (function contactShadow(){
   const c=document.createElement('canvas'); c.width=c.height=256;
   const ctx=c.getContext('2d'); const g=ctx.createRadialGradient(128,128,10,128,128,124);
@@ -932,7 +976,7 @@ function resize(){ const w=$('#stage').clientWidth,h=$('#stage').clientHeight;
   // keep the aircraft centred in the OPEN area (not behind the floating panels): shift the
   // frustum left of the right data-panel (~406px) and up out of the bottom scrub+fleet (~250px).
   const occX = w>940 ? 200 : 0;                // +x shifts the jet left of the right data-panel
-  const occY = h>620 ? Math.round(h*0.18) : 0; // +y lifts the jet up out of the bottom scrub+fleet
+  const occY = h>620 ? Math.round(h*0.25) : 0; // +y lifts the jet up toward the upper third
   camera.setViewOffset(w,h, occX, occY, w, h);
   camera.updateProjectionMatrix(); }
 window.addEventListener('resize',resize); resize();
