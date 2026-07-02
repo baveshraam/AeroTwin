@@ -1,7 +1,7 @@
 # 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
 # File Created: 18.11.2011 16:07:59
 
-mtllib 11803_Airplane_v1_l1.mtl
+mtllib airplane.mtl
 
 #
 # object 11803_Airplane_body

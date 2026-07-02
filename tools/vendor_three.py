@@ -17,6 +17,8 @@ VENDOR = Path(__file__).resolve().parents[1] / "src" / "l1_twin" / "static" / "v
 FILES = {
     "three.min.js": "https://unpkg.com/three@0.128.0/build/three.min.js",
     "OrbitControls.js": "https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js",
+    "OBJLoader.js": "https://unpkg.com/three@0.128.0/examples/js/loaders/OBJLoader.js",
+    "MTLLoader.js": "https://unpkg.com/three@0.128.0/examples/js/loaders/MTLLoader.js",
 }
 
 

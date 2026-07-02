@@ -27,9 +27,18 @@ from src.l3_agent import copilot, workorder
 from src.l3_agent.agent import draft_work_order
 
 STATIC = Path(__file__).resolve().parent / "static"
+MODEL_ASSETS = Path(__file__).resolve().parents[2] / "Airplane-body"
 app = FastAPI(title="AeroTwin-Edge - Digital Twin")
 if STATIC.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")
+if MODEL_ASSETS.exists():
+    app.mount("/model-assets", StaticFiles(directory=str(MODEL_ASSETS)), name="model-assets")
+
+
+@app.get("/preview-model", response_class=HTMLResponse)
+def preview_model() -> HTMLResponse:
+    page = STATIC / "preview-model.html"
+    return HTMLResponse(page.read_text(encoding="utf-8"))
 
 
 @app.get("/", response_class=HTMLResponse)
