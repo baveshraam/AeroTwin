@@ -23,6 +23,25 @@ from __future__ import annotations
 from src.l0_detect.grade import grade_defect
 from src.l1_twin import db
 from src.l2_progress.paris import paris_rul_mc
+from src.l2_progress import bayes
+
+
+# Federated global growth prior, computed once and reused as the Bayesian PRIOR for every
+# tail's per-defect learning. (mean, spread) in mm per 1000 cycles. Lazy + cached so the
+# numpy/RNG cost is paid at most once per process.
+_PRIOR: tuple[float, float] | None = None
+
+
+def _growth_prior() -> tuple[float, float]:
+    global _PRIOR
+    if _PRIOR is None:
+        try:
+            from src.l1_twin import federated
+            sim = federated.simulate()
+            _PRIOR = (float(sim["global_mean"]), float(sim.get("global_spread") or 0.25))
+        except Exception:
+            _PRIOR = (0.80, 0.25)   # illustrative fallback if federation is unavailable
+    return _PRIOR
 
 # ponytail: one fleet-wide baseline interval stands in for the calendar/hard-time
 # check. Per-ATA-zone intervals if a customer's maintenance program needs them.
@@ -111,10 +130,18 @@ def tail_state(tail: str, findings: list[dict]) -> dict:
                                      worst["grade"] if worst else "")
     # RUL as a P10-P90 band (uncertainty-aware), not a false-precision single number.
     band = None
+    learned = None
     if worst and not grounded:
         lim = _limit_mm(worst)
         if lim:
             band = paris_rul_mc(worst["size_mm"], lim)
+            # Bayesian per-tail learning: update the federated growth prior with THIS
+            # defect's own scan history, tightening its RUL band as evidence accrues.
+            scans = [f for f in findings
+                     if f["location"] == worst["location"]
+                     and f["defect_type"] == worst["defect_type"]]
+            pmean, psd = _growth_prior()
+            learned = bayes.learn(scans, lim - worst["size_mm"], pmean, psd)
     return {
         "tail": tail,
         "health": health,
@@ -122,7 +149,8 @@ def tail_state(tail: str, findings: list[dict]) -> dict:
         "open_defects": len(opens),
         "worst": worst,
         "rul_cycles": rul,
-        "rul_band": band,       # {p10,p50,p90,mean,n} — the honest RUL
+        "rul_band": band,       # {p10,p50,p90,mean,n} — the physics (Monte-Carlo) RUL
+        "rul_learned": learned, # Bayesian posterior + tightened band (None until 2+ scans)
         "current_cycles": current_cycles,
         **rec,
     }

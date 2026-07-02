@@ -117,6 +117,60 @@ Environment note: this machine is CPU-only (AMD Radeon iGPU, no CUDA), so traini
 `yolov8n-seg` at reduced imgsz — a *real* model, stated honestly (report POD + CPU FPS,
 not a GPU mAP number). torch/torchvision/ultralytics/onnxruntime all installed.
 
+## 3c. Session 3 (2026-07-02) — LIGHT UI overhaul + the twin now *learns*
+
+Directive: the 3D twin looked bad (a light source detached from the airframe on orbit, an
+incomplete/rough model, a dark theme the user rejected), and — ML training aside — pick the
+best remaining thread and ship it. Two deliverables:
+
+| Thread | Status | Where / notes |
+|---|---|---|
+| **Root-cause + fix the "floating light" bug** | ✅ done | The bright blob that detached from the plane on rotation was a **hard specular highlight** — the fuselage was near-mirror metal (`metalness:0.82`) and the cockpit was a `roughness:0.08` glass sphere, so the directional key light left a world-locked hotspot. Real aircraft are *painted*: airframe is now matte (`metalness:0.15, roughness:0.48`), the glossy cockpit sphere is gone (replaced by matte windshield panels), and the key light dropped 3.0→1.7 with a soft daylight rig. A matte surface physically cannot produce that hotspot. |
+| **Light minimalist theme (whole UI)** | ✅ done | [static/index.html](../src/l1_twin/static/index.html) rebuilt on a **light** 3-colour system: soft-light ground `#eef1f5`, white surfaces, near-black ink `#14181f` at 3 opacities, one warm amber `#e07d17` = "look here". Floating glass cards (blur + hairline + soft shadow), rounded 11–16px radii, refined type scale. Same honest rule kept: calm neutral = healthy, amber = attention. Stage/floor/grid/fog/env all recoloured light; defect halos switched from additive (invisible on white) to normal-blended amber so they read on a light stage. |
+| **More complete aircraft model** | ✅ done | Refined `LatheGeometry` profile (rounded ogive nose, long tapered tail cone), bevelled airfoil wings **with canted winglets**, horizontal + vertical stabs, under-wing nacelles with intake lip + fan + **spinner + exhaust cone** + pylon, cabin window strip, **cockpit windshield panels**, subtle door outlines. Health still tints the airframe toward amber only when it needs attention. |
+| **Bayesian per-tail growth-rate learning (was deferred #1 — NOW DONE)** | ✅ done + self-checked | [src/l2_progress/bayes.py](../src/l2_progress/bayes.py). Closed-form **Normal-Normal** conjugate update: each defect's crack-growth rate starts at the **federated global prior** (`federated.simulate()` now also emits `global_spread`, the right scale for a per-tail prior) and is updated by that defect's own consecutive-scan growth observations. Posterior SD shrinks monotonically with each scan; the tightened rate distribution is pushed through `remaining_mm / rate` into a **learned P10/P50/P90 RUL band** narrower than the one-size-fits-all physics band. Wired into `twin.tail_state()` as `rul_learned` and surfaced in the UI under each defect's RUL band ("prior ±X → posterior ±Y · ×N tighter"). Self-check: posterior never widens, pulls toward faster-than-prior data, ×10 tighter after 4 obs; band ordering holds. This makes the "digital twin that learns" claim real and ties **federated → per-tail Bayesian → RUL band** into one story. |
+
+Verification this session: `python -m src.l2_progress.bayes`, `python -m src.l1_twin.federated`,
+`python -m src.l1_twin.twin` all green; `python -m src.pipeline --seed` still nets ₹6.12 Cr
+(1 grounded, 2 serviced, 1 deferred); FastAPI `TestClient` confirms `/api/tail/{t}` carries
+`rul_learned` (×1.4 tighter on the seed's 2-scan defects — more scans tighten further) and
+`/api/federated` carries `global_spread`; index serves 200 and the inline JS parses clean.
+(WebGL can't be screenshotted in this headless env — the visual needs a human eye, but the
+material/lighting fix is deterministic, not a tuning guess.)
+
+## 3d. Session 4 (2026-07-02, third pass) — "floating light" killed, jet completed, dashboard merged, DP
+
+Directive: the twin still looked bad — a light "emitting from inside the plane but floating
+outside when you rotate it", an incomplete/garbage-looking model, and the separate classic
+dashboard preview was never folded into the main app. Plus: pick the best no-GPU thread and
+ship it. Five deliverables:
+
+| Thread | Status | Where / notes |
+|---|---|---|
+| **Root-cause + fix the *real* floating-light bug** | ✅ done | The blob that detached from the airframe on orbit was **not** a specular this time — it was the amber defect **halo sprites**, created with `depthTest:false` ([static/index.html](../src/l1_twin/static/index.html), `glowSprite()`). That flag draws a sprite on top of everything regardless of 3D depth, so a defect glow on the *far* side of the fuselage still rendered in front of the plane and looked like a light floating outside it. Fix: `depthTest:true` (kept `depthWrite:false` so halos still blend) → halos are now correctly occluded by the airframe. Session 3 had fixed speculars but never touched the sprites, which is why it persisted. |
+| **Hotspots redrawn as surface-conforming markers** | ✅ done | Each defect is now a flat **amber ring decal laid on the skin** (oriented to the fuselage surface normal) + a small emissive core + the (now depth-tested) soft halo. Reads as a painted inspection marker, occludes naturally, no floating billboard. |
+| **More complete aircraft model** | ✅ done | Kept the **parametric** `LatheGeometry` fuselage on purpose — the clickable ATA-zone defect hotspots are computed from `radiusAt()/xToT()/segAngle()`, so a black-box glTF swap would break the twin's core interaction (and can't be visually verified in this headless env). Added: **tricycle landing gear** (nose + twin-wheel mains) for a complete parked stance, a **wing-body fairing** so the wing root blends instead of looking stuck-on, an **amber tail-fin brand accent** (the one warm mark on a calm airframe), softer matte materials (killed the glossy nacelle lip), and a **Top / Side / Orbit** view switcher. |
+| **Classic dashboard preview merged into the main app** | ✅ done | [data/dashboard_preview.html](../data/dashboard_preview.html)'s richer views are now in the 3D app: a **Fleet risk board** (per-tail prescribed action + slot + AOG-risk column, click-to-select, from `/api/fleet`'s `plan`) and a **per-defect scan-history table** (date / cycles / size / grade, from `/api/tail`'s `history`). |
+| **Interactive What-if planner surfaced** | ✅ done | `/api/whatif` (defer-a-tail cost) and `/api/scenario/capacity` (add-slots risk released) were live but the frontend never used them — now a compact planner with two dropdowns re-prices the plan live and shows the delta (base net vs scenario net). |
+| **Differential privacy on federated aggregation (deferred #3 — NOW DONE)** | ✅ done + self-checked | [src/l1_twin/federated.py](../src/l1_twin/federated.py). Added `dp_site_release()` (Laplace mechanism: each site clips its rates to `[0, clip]` bounding any one tail's influence, then adds noise at scale `sensitivity/ε` where the clipped-mean L1 sensitivity is `clip/n`) and `differentially_private_average()` (FedAvg over DP releases — averaging is post-processing, so it costs no extra ε; the global prior is ε-DP w.r.t. every site). `simulate()` now emits a `dp` block (ε, clip, mechanism, DP global mean, noise cost vs plain FedAvg); surfaced in the UI's federated panel as an `ε=1.0` badge. Self-check: at ε=1 the DP mean stays within 0.5 of plain FedAvg (utility preserved, `0.767` vs `0.801`, only `0.034` mm/kcyc of noise) and inside the valid `[0, clip]` range. |
+
+Verification this session (all green): `python -m src.l1_twin.federated` (FedAvg + new DP self-check),
+`python -m src.l2_progress.bayes`, `python -m src.l1_twin.twin`, and `python -m src.pipeline --seed`
+(still nets ₹6.12 Cr — 1 grounded / 2 serviced / 1 deferred). FastAPI `TestClient`: index serves 200
+with all new markup (`renderBoard`, `runWhatif`, `histTable`, `depthTest:true`, landing gear, DP badge)
+present; `/api/federated` carries the `dp` block; `/api/whatif` + `/api/scenario/capacity` return the
+expected keys; `/api/tail/{t}` carries per-defect `history`. The inline app JS passes `node --check`
+(no syntax errors).
+
+**Visual verification (new this session):** the WebGL scene was rendered headless via Playwright +
+Chromium (SwiftShader) and screenshotted — no console/page errors. Confirmed with hard evidence:
+(1) the airframe renders (73 parts / 34k triangles, centre projects to screen-centre); (2) the
+floating-light bug is gone — an underside/far-side orbit angle (which would have exposed a
+depth-broken halo) shows **zero** amber glow outside the airframe; (3) defect hotspots render as amber
+markers **on the skin**, not floating. **Key visual finding:** a near-white airframe (`#f4f6f9`) was
+invisible against the light stage (white-on-white) — the fix was a mid silver-grey `#aeb7c2` airframe
+plus a close low side-quarter hero framing so the fuselage/windows/wing fill the frame and read.
+
 ## 4. What's still open
 
 **Base crack training is validated and runnable** (session 2); the remaining depth is the
@@ -133,14 +187,22 @@ not a GPU mAP number). torch/torchvision/ultralytics/onnxruntime all installed.
    (`train_from_folder`) — point it at AeBAD / MVTec 'good' sets when pulled.
 
 **Deliberately deferred (not blocking, named so they don't rot into "forgotten"):**
-- Bayesian per-tail growth-rate updating (the twin currently uses the Monte-Carlo band
-  for uncertainty; it does not yet *learn* and tighten per tail as more scans arrive).
+- ✅ **Bayesian per-tail growth-rate updating — DONE (session 3)**
+  ([src/l2_progress/bayes.py](../src/l2_progress/bayes.py)). The twin now learns per tail:
+  Normal-Normal posterior seeded by the federated prior, tightening each defect's RUL band
+  as scans arrive (`rul_learned` in `tail_state`, shown in the UI). Next refinement would be
+  a full Normal-inverse-gamma model (learn the observation noise too) and persisting the
+  posterior across sessions so it accumulates over a tail's whole service life.
 - Real sensor hardware integration for SHM (today's `shm.py` is a physically-motivated
   synthetic stream + a real detector algorithm — swap the stream for field telemetry
   later; the CUSUM detector and twin interface don't need to change).
-- Secure aggregation / differential privacy on top of the federated simulation (the
-  protocol is structurally private — only 3 numbers per site leave the hangar — but
-  production would add DP noise / secure aggregation).
+- ✅ **Differential privacy on the federated aggregation — DONE (session 4)**
+  ([src/l1_twin/federated.py](../src/l1_twin/federated.py), `dp_site_release` /
+  `differentially_private_average`, Laplace mechanism + rate clipping, ε-DP per site,
+  self-checked, surfaced in the UI). Next refinement would be **secure aggregation**
+  (so the coordinator never sees even a single site's noised value) and **privacy
+  accounting** across repeated releases (composition / RDP), plus a Gaussian-mechanism
+  option with an (ε, δ) budget.
 
 ## 5. How to run the buffed system end-to-end
 
