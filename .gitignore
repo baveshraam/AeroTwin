@@ -31,3 +31,6 @@ runs/
 .DS_Store
 .vscode/
 .idea/
+
+# Local Claude Code tool settings
+.claude/
