@@ -133,7 +133,11 @@ def api_shm(tail: str) -> dict:
     """Between-inspection SHM: fused strain/AE/vibration + a CUSUM change alert."""
     rate, worst = _worst_growth_rate(tail)
     a0 = worst["size_mm"] if worst else 6.0
-    return {"tail": tail, "rate_mm_per_cyc": rate, **shm.shm_health(rate, a0_mm=a0)}
+    return {"tail": tail, "rate_mm_per_cyc": rate,
+            # honesty: the sensor stream is a physics-motivated SYNTHETIC signal; the
+            # EWMA+CUSUM change-detector running over it is a real, standard SHM algorithm.
+            "synthetic": True, "synthetic_note": "physics-motivated synthetic sensor stream; CUSUM detector is real",
+            **shm.shm_health(rate, a0_mm=a0)}
 
 
 @app.get("/api/spares")
@@ -193,7 +197,11 @@ def api_ask(question: str) -> dict:
 @app.get("/api/federated")
 def api_federated() -> dict:
     """ITAR-safe federated growth-prior simulation across hangars."""
-    return federated.simulate()
+    # honesty: the FedAvg + DP math is real; the per-site data is a SIMULATION of 4
+    # hangars drawing from one true distribution (there is no field federation yet).
+    return {"simulated": True,
+            "synthetic_note": "simulated 4-hangar federation; FedAvg + DP math is real",
+            **federated.simulate()}
 
 
 @app.get("/api/telemetry")

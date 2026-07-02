@@ -108,7 +108,7 @@ src/
                app.py (3D twin UI + JSON API) · view.py (classic view)
                static/index.html (Three.js 3D twin, vendored, offline)
   l2_progress/ paris.py (crack-growth + Monte-Carlo RUL with P10/P50/P90 bands)
-  l3_agent/    agent.py (citation guardrail) · copilot.py (Ollama tool-calling)
+  l3_agent/    agent.py (citation guardrail) · copilot.py (deterministic tool-router; optional Ollama)
                workorder.py (draft→sign→close lifecycle + tamper-evident PDF) · audit.py
   pipeline.py  the unbroken sense → twin → predict → prescribe → price → agent runner
 data/
@@ -128,10 +128,26 @@ hangar. Under one roof, all running: an **interactive 3D structural twin** you s
 forward in flight cycles to watch defects grow and jets ground themselves; **uncertainty-
 aware RUL** (Monte-Carlo P10/P50/P90, not false precision); **continuous SHM** between
 inspections (sensor-fusion + CUSUM); a **capacity-aware fleet plan quantified in rupees**
-with spares pre-staging and live what-ifs; a **citation-gated local-LLM copilot** that
+with spares pre-staging and live what-ifs; a **citation-gated agentic copilot** — a
+deterministic offline tool-router by default (optional local LLM via Ollama) — that
 tool-calls the twin; a **work-order lifecycle** closed out with a **tamper-evident PDF**;
 and **ITAR-safe federated learning** that shares growth priors, never imagery. No single
 competitor combines all of it. One avoided AOG day pays for the ₹10,000 node many times over.
+
+## What's real vs. synthetic (honesty ledger)
+
+We label every synthetic source in the API, the UI, and here — nothing is presented as
+more "live" than it is. The *algorithms* are real and tested; what's synthetic is the
+*data feeding them*, because we don't have field sensor hardware or an ITAR data-sharing
+agreement for a POC.
+
+| Component | Algorithm (real) | Data (synthetic — why) | Where it's flagged |
+|---|---|---|---|
+| **Defect detection** | YOLOv8-seg pipeline + SRM grading | mock detector returns a fixed size (`model_version: mock-v0`) — real model trains separately | API `model_version`; UI header **"SYNTHETIC DATA · mock-v0"** badge |
+| **SHM stream** | EWMA + CUSUM change-point detector (standard SHM) | physics-motivated synthetic strain/AE/vibration signal — no onboard sensors on a laptop | API `synthetic:true`; UI **"SYNTHETIC STREAM"** chip + panel caption |
+| **Federated learning** | FedAvg + Laplace differential privacy | 4 simulated hangars drawing from one true distribution — no field federation yet | API `simulated:true`; UI **"SIMULATED"** chip + panel note |
+| **Edge telemetry HUD** | real `psutil` values on the Pi | fps/latency/cpu/power are simulated on a laptop | API `simulated:true`; UI fps `*` + hover note |
+| **Copilot** | deterministic intent-parse → real twin tool-calls, citation guardrail | no LLM by default (optional Ollama) | UI "deterministic tool-router"; answer footer |
 
 ## Disclaimer
 

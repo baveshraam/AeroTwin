@@ -454,7 +454,7 @@ if(location.pathname.replace(/\/+$/,'')!=='/dark')document.documentElement.class
       <div id="defects"><p class="muted">Loading…</p></div>
     </div>
     <div class="sec">
-      <h2>Between-inspection SHM</h2>
+      <h2>Between-inspection SHM <span class="synthflag" style="font-size:8px;padding:2px 7px">SYNTHETIC STREAM</span></h2>
       <div class="shm" id="shm"><p class="muted">select an aircraft</p></div>
     </div>
     <div class="sec">
@@ -462,7 +462,7 @@ if(location.pathname.replace(/\/+$/,'')!=='/dark')document.documentElement.class
       <div id="spares"><p class="muted">Loading…</p></div>
     </div>
     <div class="sec">
-      <h2>Federated fleet learning <span class="tt">FedAvg · DP</span></h2>
+      <h2>Federated fleet learning <span class="tt">FedAvg · DP</span> <span class="synthflag" style="font-size:8px;padding:2px 7px">SIMULATED</span></h2>
       <div class="fed" id="fed"><p class="muted">Loading…</p></div>
     </div>
     <div class="sec">
@@ -470,9 +470,9 @@ if(location.pathname.replace(/\/+$/,'')!=='/dark')document.documentElement.class
       <div class="cert" id="cert"></div>
     </div>
     <div class="sec">
-      <h2>MRO copilot <span class="tt">offline · agentic</span></h2>
+      <h2>MRO copilot <span class="tt">offline · tool-router</span></h2>
       <div class="copilot">
-        <div class="lead">Calls tools into the twin — SRM limits, Monte-Carlo RUL, tail state — under a citation guardrail.</div>
+        <div class="lead">Deterministic offline tool-router (no LLM required): parses intent and calls real tools into the twin — SRM limits, Monte-Carlo RUL, tail state — under a citation guardrail. Optional local LLM (Ollama) adds free-form prose.</div>
         <div class="askbar">
           <input id="ask" placeholder="SRM limit for a crack at ATA 53?">
           <button class="b" id="askBtn">Ask</button>
@@ -751,16 +751,18 @@ async function loadFederated(){
     $('#fed').innerHTML=`
       <div class="big"><b>${d.global_mean.toFixed(3)}</b><span>mm / 1k cyc · global growth prior (±${d.global_std_error.toFixed(3)})</span></div>
       ${rows}${dp}
-      <div class="note">Only (n, mean, var) leaves each hangar — no imagery, no per-tail record. Pooled estimate is provably tighter for data-poor sites, and seeds each tail's Bayesian prior.</div>`;
+      <div class="note"><b>Simulated</b> 4-hangar federation — the FedAvg + differential-privacy math is real; there is no field federation yet. Only (n, mean, var) leaves each hangar — no imagery, no per-tail record. Pooled estimate is provably tighter for data-poor sites, and seeds each tail's Bayesian prior.</div>`;
   }catch(e){ $('#fed').innerHTML='<p class="muted">unavailable</p>'; }
 }
 async function loadSpares(){
-  const s=await jf('/api/spares');
-  if(!s.orders||!s.orders.length){ $('#spares').innerHTML='<p class="muted">Nothing due within the horizon.</p>'; return; }
-  $('#spares').innerHTML=s.orders.map(o=>`<div class="sprow">
-    <span class="k"><b>${o.tail}</b> <span>· ${o.kit}</span></span>
-    <span class="v ${o.grounded?'now':''}">${o.grounded?'ORDER NOW':'by '+(o.order_by_cycle||0).toLocaleString()+' cyc'}</span>
-  </div>`).join('');
+  try{
+    const s=await jf('/api/spares');
+    if(!s.orders||!s.orders.length){ $('#spares').innerHTML='<p class="muted">Nothing due within the horizon.</p>'; return; }
+    $('#spares').innerHTML=s.orders.map(o=>`<div class="sprow">
+      <span class="k"><b>${o.tail}</b> <span>· ${o.kit}</span></span>
+      <span class="v ${o.grounded?'now':''}">${o.grounded?'ORDER NOW':'by '+(o.order_by_cycle||0).toLocaleString()+' cyc'}</span>
+    </div>`).join('');
+  }catch(e){ $('#spares').innerHTML='<p class="muted">unavailable</p>'; }
 }
 
 // ---- what-if planner ----
