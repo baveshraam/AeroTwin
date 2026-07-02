@@ -353,6 +353,18 @@ if(location.pathname.replace(/\/+$/,'')!=='/dark')document.documentElement.class
   html.light .askbar input{background:rgba(28,32,38,.05)}
   html.light .wctl select option{background:#ffffff;color:var(--ink)}
 
+  /* honesty badge: findings are mock/synthetic until the real detector lands */
+  .synthflag{font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--accent-2);background:var(--accent-3);
+    padding:3px 9px;border-radius:6px;white-space:nowrap}
+
+  /* lite mode: auto-enabled by the FPS guard on weak GPUs (Pi) — drop the expensive
+     backdrop-blur and lean on opaque panels so text stays readable without it */
+  html.lite{--glass:rgba(10,14,20,.9);--glass-2:rgba(15,20,28,.93)}
+  html.lite.light{--glass:rgba(244,242,236,.94);--glass-2:rgba(252,251,248,.96)}
+  html.lite header,html.lite .badge,html.lite .legend,html.lite .scrub,html.lite aside,
+  html.lite .fleet,html.lite .viewbtns button{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+
   /* entrance: panels blur/scale in from a nearer depth plane */
   @keyframes glassIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
@@ -547,7 +559,7 @@ try{
 // soft daylight studio rig — broad, low-contrast, NO hard specular hotspot
 scene.add(new THREE.HemisphereLight(0xffffff, 0xd6dce4, 1.05));
 const key = new THREE.DirectionalLight(0xffffff, 1.55); key.position.set(6,11,7);
-key.castShadow=true; key.shadow.mapSize.set(2048,2048);
+key.castShadow=true; key.shadow.mapSize.set(1024,1024);   // 1024 is imperceptible here and much lighter on the Pi GPU
 key.shadow.camera.near=1; key.shadow.camera.far=50;
 key.shadow.camera.left=-12; key.shadow.camera.right=12; key.shadow.camera.top=12; key.shadow.camera.bottom=-12;
 key.shadow.bias=-0.0004; key.shadow.radius=9; scene.add(key);
@@ -678,13 +690,30 @@ let selectedTail=null, tailData={}, lastStates=[];
 async function jf(u,opt){ return (await fetch(u,opt)).json(); }
 
 async function loadFleet(){
-  const f=await jf('/api/fleet');
-  lastStates=f.states;
-  renderLedger(f.plan.ledger); renderBoard(f.plan.plan, f.states); renderFleet(f.states);
-  fillWhatifOptions(f.states); loadSpares(); loadFederated();
-  const want=new URLSearchParams(location.search).get('tail');
-  if(!selectedTail && f.states.length)
-    selectTail(f.states.some(s=>s.tail===want)?want:f.states[0].tail);
+  try{
+    const f=await jf('/api/fleet');
+    lastStates=f.states;
+    renderLedger(f.plan.ledger); renderBoard(f.plan.plan, f.states); renderFleet(f.states);
+    fillWhatifOptions(f.states); loadSpares(); loadFederated();
+    updateDataBadge(f.states);
+    const want=new URLSearchParams(location.search).get('tail');
+    if(!selectedTail && f.states.length)
+      selectTail(f.states.some(s=>s.tail===want)?want:f.states[0].tail);
+  }catch(e){
+    // never leave the board silently stuck on "Loading…" — say what's wrong and self-heal
+    $('#board').innerHTML='<p class="muted">⚠ Can\'t reach the twin API — is the server running? Retrying…</p>';
+    $('#netv').textContent='—';
+    setTimeout(loadFleet,2500);
+  }
+}
+// honesty: surface whether the findings come from the mock detector or the real model,
+// straight from model_version — so nothing is presented as more "live" than it is
+function updateDataBadge(states){
+  const el=$('#dataBadge'); if(!el) return;
+  const mv=(states||[]).map(s=>s.worst&&s.worst.model_version).find(Boolean)||'';
+  if(/mock|synth/i.test(mv)){ el.textContent='SYNTHETIC DATA · '+mv; el.hidden=false; }
+  else if(mv){ el.textContent='LIVE MODEL · '+mv; el.hidden=false; }
+  else el.hidden=true;
 }
 function renderLedger(lg){
   tweenMoney($('#netv'), lg.net_value);
@@ -907,7 +936,7 @@ async function scrubTo(cyc){
 async function poll(){
   try{ const t=await jf('/api/telemetry');
     $('#hud').innerHTML=`
-      <div class="chip live">fps<b>${t.fps}${t.simulated?'*':''}</b></div>
+      <div class="chip live"${t.simulated?' title="* simulated on the laptop; real psutil values stream on the Pi"':''}>fps<b>${t.fps}${t.simulated?'*':''}</b></div>
       <div class="chip">latency<b>${t.latency_ms}ms</b></div>
       <div class="chip">cpu<b>${t.cpu_temp_c}°</b></div>
       <div class="chip">power<b>${t.power_w}W</b></div>
@@ -980,6 +1009,33 @@ function resize(){ const w=$('#stage').clientWidth,h=$('#stage').clientHeight;
   camera.setViewOffset(w,h, occX, occY, w, h);
   camera.updateProjectionMatrix(); }
 window.addEventListener('resize',resize); resize();
+
+// ============================ adaptive perf guard ============================
+// On a weak GPU (e.g. the Pi 5) the backdrop-blur + shadows can drop frames. Sample real
+// FPS once the model is in; if it stays under 40 for 2s, shed the heaviest effects (hi-dpi,
+// shadows, glass blur via .lite) so the live demo never stutters. On a capable laptop this
+// never triggers and the probe stops after a few seconds.
+(function perfGuard(){
+  let frames=0,t0=performance.now(),lows=0,checks=0,started=false;
+  (function probe(){
+    if(!started){ if(modelReady){ started=true; t0=performance.now(); frames=0; } requestAnimationFrame(probe); return; }
+    frames++; const now=performance.now();
+    if(now-t0>=1000){
+      const fps=frames*1000/(now-t0); frames=0; t0=now; checks++;
+      lows = fps<40 ? lows+1 : 0;
+      if(lows>=2){
+        document.documentElement.classList.add('lite');
+        renderer.setPixelRatio(1);
+        renderer.shadowMap.enabled=false; key.castShadow=false;
+        if(key.shadow.map) key.shadow.map.dispose();
+        skinParts.forEach(m=>m.material.needsUpdate=true);
+        return;                         // load shed — stop probing
+      }
+      if(checks>=6) return;             // GPU is comfortably fine — stop probing
+    }
+    requestAnimationFrame(probe);
+  })();
+})();
 
 let clock=0;
 (function animate(){ requestAnimationFrame(animate); clock+=0.016;
