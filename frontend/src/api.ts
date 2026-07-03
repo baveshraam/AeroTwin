@@ -14,6 +14,8 @@ export const getScrub = (c: number) => j('/api/scrub?cycles=' + c)
 export const getTelemetry = () => j('/api/telemetry')
 export const getAudit = () => j('/api/audit')
 export const ask = (q: string) => j('/api/ask?question=' + encodeURIComponent(q), { method: 'POST' })
+export const getNgafidBoard = () => j('/api/ngafid/board')
+export const getNgafidFlight = (i: number) => j('/api/ngafid/flight/' + i)
 
 // ₹ formatter — identical to the original inr()
 export const inr = (n: number) =>

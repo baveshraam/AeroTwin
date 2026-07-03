@@ -95,7 +95,7 @@ def board() -> dict:
         now = pre.tail(3)["risk"].mean()
         worst = pre.loc[pre["risk"].idxmax()]
         rows.append({
-            "tail": f"N-{eid}", "issue": g["label"].iloc[0],
+            "tail": f"N-{eid}", "flight": int(worst["master_index"]), "issue": g["label"].iloc[0],
             "system": g["hierarchy"].dropna().iloc[0] if g["hierarchy"].notna().any() else "other",
             "flights": int(len(g)),
             "risk_now": round(float(now), 3), "risk_peak": round(float(pre["risk"].max()), 3),

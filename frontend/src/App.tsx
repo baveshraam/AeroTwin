@@ -1,6 +1,7 @@
 import { NavLink, Route, Routes } from 'react-router-dom'
 import { TwinProvider, useTwin } from './DataContext'
 import Overview from './pages/Overview'
+import RiskBoard from './pages/RiskBoard'
 import FleetPlanning from './pages/FleetPlanning'
 import AircraftHealth from './pages/AircraftHealth'
 import CopilotAudit from './pages/CopilotAudit'
@@ -23,6 +24,7 @@ function Shell() {
       <div className="brand"><span className="dot" /><b>AeroTwin</b><s>·Edge</s></div>
       <div className="navlinks">
         <NavLink to="/" end>Overview</NavLink>
+        <NavLink to="/board">Fleet Risk</NavLink>
         <NavLink to="/aircraft">Aircraft Health</NavLink>
         <NavLink to="/copilot">Copilot &amp; Audit</NavLink>
         <NavLink to="/learning">Fleet Learning</NavLink>
@@ -33,6 +35,7 @@ function Shell() {
     <div className="container">
       <Routes>
         <Route path="/" element={<Overview />} />
+        <Route path="/board" element={<RiskBoard />} />
         <Route path="/aircraft" element={<AircraftHealth />} />
         <Route path="/copilot" element={<CopilotAudit />} />
         <Route path="/learning" element={<LearningEdge />} />
