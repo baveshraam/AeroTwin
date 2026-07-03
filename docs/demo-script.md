@@ -1,5 +1,13 @@
 # Live Demo Script — AeroTwin-Edge (~3 min, click-by-click)
 
+> ⚠️ **RE-TUNE PENDING (2026-07-03):** this script describes the *current* structural-twin
+> HTML demo. Under the MRO re-tune (see [PLAN.md](PLAN.md)), the demo will be **re-led by
+> predictive health**: telemetry in → **failure/RUL prediction + the "why" (SHAP top sensors)**
+> → fleet board → ledger → work order → audit, in the new **React** app with MRO on Page 1 and
+> structural inspection on Page 2. Rewrite this walk once the PHM core + React app land; the
+> hero moments below (grounding, time-scrub, rupee ledger) still apply, just after the
+> prediction beat leads. The structural/crack steps move to the Page-2 "extra sensor" segment.
+
 > Rehearse against this exact path. Every interaction below was verified against the
 > running UI + API on 2026-07-03. Times are target cues, not hard limits.
 > **Open on the dark theme:** `http://127.0.0.1:8000/dark` — the near-black hangar makes

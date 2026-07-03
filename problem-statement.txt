@@ -1,11 +1,27 @@
 ================================================================================
-TATA INNOVENT-27  |  AI AT THE EDGE  |  PROBLEM STATEMENT (v2, deep)
-Project: AeroTwin-Edge
-Track:   3.2.3 Aerospace
-         3.2.3.1 Edge AI for Digital Twin-Enabled MRO (PRIMARY)
-         3.2.3.3 Predictive Maintenance & Aircraft Health Monitoring (depth layer)
-         3.2.3.4 Intelligent Inspection & Defect Detection (the SENSOR that feeds the twin)
-         touches 3.2.3.5 (secure/software-defined)
+TATA INNOVENT-27  |  AI AT THE EDGE  |  PROBLEM STATEMENT (v3, MRO re-tune)
+Project: AeroTwin
+Category:    3.2.3   AI at the Edge Solutions for Aerospace
+SUBCATEGORY: 3.2.3.1 Edge AI for Digital Twin-Enabled MRO    <<< PRIMARY — CHOSEN >>>
+  Addressed as DEPTH LAYERS inside the SAME twin (not separate problem statements):
+    3.2.3.3  Predictive Maintenance & Aircraft Health Monitoring  = the CORE depth layer
+    3.2.3.4  Intelligent Inspection & Defect Detection            = an EXTRA sensor feeding the twin
+    3.2.3.5  Connected, Secure & Software-Defined Aerospace       = federated + audit + MLOps
+    3.2.3.6  Sustainable Aviation                                 = fewer needless checks / ferry flights
+================================================================================
+
+>>> PIVOT (2026-07-03) — READ FIRST <<<
+This project is PRIMARILY 3.2.3.1 Edge AI for Digital Twin-Enabled MRO. The digital twin
+is the product. Its CORE input is now aircraft/engine SENSOR TELEMETRY, from which an
+on-device model predicts each tail's maintenance need and Remaining Useful Life BEFORE
+failure — Prognostics & Health Management (PHM) — trained on REAL public fleet data
+(NGAFID general-aviation flight records; NASA C-MAPSS turbofan run-to-failure). Structural
+crack/corrosion inspection is RETAINED but DEMOTED to one EXTRA sensor feeding the same
+twin, no longer the headline. The section FA answers below are the canonical, reworked,
+PHM-first submission text. Sections 1-18 and the Annexes are deeper working notes: where
+they read as structural-inspection-first, treat them as the EXTRA-FEATURE + platform-vision
+depth, reframed under this pivot. We are NOT changing problem statements — we are going
+DEEPER inside 3.2.3.1, with the twin (not the crack detector) as the product.
 ================================================================================
 
 CONTENTS
@@ -40,13 +56,24 @@ form and as source content for the PPT. (Sections 0-18 and the Annexes below are
 the deeper working notes behind these answers.)
 
 ----------------------------------------------------------------------
-Q42. PROJECT TITLE
+Q42. PROJECT TITLE   (technical, buzzword-forward; primary = 3.2.3.1, extras trailing)
 ----------------------------------------------------------------------
-AeroTwin-Edge: the offline digital twin that decides which aircraft to ground and
-which to fly. A per tail and per fleet structural digital twin on a Raspberry Pi that
-goes predict, prescribe, price, forecasting each defect remaining useful life,
-prescribing a hangar capacity constrained fleet maintenance plan, and pricing every
-decision in rupees against the blind calendar, fully offline and audit proof.
+PRIMARY:
+AeroTwin: An Edge-AI Digital Twin for Digital-Twin-Enabled MRO with On-Device Prognostics
+and Health Management (PHM), Explainable Remaining-Useful-Life Estimation, Condition-Based
+Maintenance, and Privacy-Preserving Federated Fleet Intelligence.
+
+ALTERNATES:
+(a) AeroTwin: An Edge-Native Digital-Twin Platform for Predictive MRO — Prognostics-Driven
+    Condition-Based Maintenance with Aircraft Health Monitoring and Integrated Structural
+    Defect Inspection.
+(b) AeroTwin: Offline Edge-AI Digital-Twin-Enabled MRO — Sensor-Telemetry Prognostics,
+    Explainable RUL, and Secure Software-Defined Fleet Health Analytics.
+
+Note: all three LEAD with Digital-Twin-Enabled MRO (3.2.3.1); PHM / aircraft health
+monitoring (3.2.3.3) is the core depth layer; structural defect inspection (3.2.3.4) and
+secure / software-defined (3.2.3.5) are named only as trailing extras, so the title stays
+unambiguously inside 3.2.3.1 while signalling the additional depth. No colloquial phrasing.
 
 ----------------------------------------------------------------------
 Q43. PROJECT CATEGORY
@@ -56,108 +83,112 @@ AI at the Edge Solutions for Aerospace
 ----------------------------------------------------------------------
 Q44. PROJECT SUBCATEGORY (primary)
 ----------------------------------------------------------------------
-Edge AI for Digital Twin-Enabled MRO
-(predictive maintenance and aircraft health monitoring, intelligent inspection and
-defect detection, and secure software defined aerospace are addressed as depth
-layers within the solution; defect detection is the sensor that feeds the twin)
+3.2.3.1 Edge AI for Digital Twin-Enabled MRO   [PRIMARY — this is the chosen statement]
+
+the per tail and per fleet digital twin is the product. the following are addressed as
+DEPTH LAYERS inside the same twin, not as separate problem statements:
+  - 3.2.3.3 predictive maintenance and aircraft health monitoring, the CORE depth layer:
+    on device prognostics from sensor telemetry, predicting maintenance need and remaining
+    useful life before failure.
+  - 3.2.3.4 intelligent inspection and defect detection, an EXTRA sensor feeding the twin.
+  - 3.2.3.5 connected, secure and software defined aerospace: federated learning with zero
+    raw data egress, a tamper evident audit trail, and signed model over the air updates.
 
 ----------------------------------------------------------------------
 Q45. SPECIFIC REAL WORLD PROBLEM
 ----------------------------------------------------------------------
-aircraft structural maintenance is scheduled predominantly on a fixed calendar or
-hard time interval rather than on the actual condition of each aircraft, which is
-simultaneously wrong in two costly directions. it over maintains the healthy
-majority of the fleet, which is pulled off line for structural checks it did not
-require, wasting ground time, labour and parts. and it under maintains the small
-number of tails whose cracks or corrosion progress quickly, because such a defect
-can outrun the interval and reach a structural repair manual allowable limit
-between scheduled checks, which is the safety and aircraft on ground exposure, where
-ground time is estimated at approximately rupees 8 lakh to 1.25 crore per hour. the
-root cause is that there is no continuous, per tail number condition record to
-schedule against. findings are held on paper task cards and disconnected systems, so
-a reliable answer to whether a given defect has grown since the last check on that
-specific tail is difficult to obtain, and severity is still assessed against SRM
-allowable limits visually, so even the measurement that would feed such a record is
-seldom repeatable. conventional cloud based artificial intelligence cannot supply
-this record, because secure ITAR restricted hangars are frequently network isolated
-and inspection imagery cannot lawfully leave the site. the missing element is a
-structural digital twin, built and queried at the edge, that converts inspections
-into a per tail condition trajectory and a fleet wide maintenance decision. this is
-the specific problem the project addresses within the digital twin enabled MRO
-category, with intelligent inspection and defect detection serving as the sensor.
+aircraft maintenance is scheduled predominantly on a fixed calendar or flight hour
+interval rather than on the actual condition of each aircraft, which is simultaneously
+wrong in two costly directions. it over maintains the healthy majority of the fleet,
+which is pulled off line for checks it did not require, wasting ground time, labour and
+parts. and it under maintains the small number of tails whose systems or structure are
+degrading faster than the interval assumes, so a fault can develop between scheduled
+checks and surface as an unscheduled removal or an aircraft on ground event, where ground
+time is estimated at approximately rupees 8 lakh to 1.25 crore per hour. the root cause is
+that there is no continuous, per tail number health record to schedule against, and no
+prediction of when a given aircraft will next need maintenance. operational sensor data
+that would reveal this is generated on every flight but is largely discarded or siloed,
+findings sit on paper task cards, and the industry lever, condition based and predictive
+maintenance, cannot be applied without a per asset model that forecasts need before
+failure. conventional cloud based artificial intelligence cannot supply this, because
+secure ITAR restricted hangars are frequently network isolated and operational data cannot
+lawfully leave the site. the missing element is a digital twin, built and queried at the
+edge, that ingests aircraft and engine sensor telemetry, predicts each tail maintenance
+need and remaining useful life before failure, and converts that into a fleet wide
+maintenance decision. structural crack and corrosion inspection is incorporated as one
+additional sensor feeding the same twin. this is the specific problem the project addresses
+within the digital twin enabled MRO category, with predictive maintenance and aircraft
+health monitoring as the core depth layer and defect inspection as an extra sensor.
 
 ----------------------------------------------------------------------
 Q46. HOW THE PROJECT ADDRESSES THE PROBLEM AND THE VALUE IT CREATES
 ----------------------------------------------------------------------
-the project delivers an offline, edge resident structural digital twin that operates
-directly at the aircraft on a Raspberry Pi class device and maintains, per tail and
-across the fleet, the condition record and the maintenance decision that today do not
-exist. every inspection is appended to a persistent per tail twin, associated with its
-part and ATA zone and severity graded against SRM allowable limits, which converts a
-subjective visual judgement into a consistent, millimetre accurate and repeatable
-measurement and, more importantly, into a condition trajectory. from that record the
-twin computes each aircraft a structural health index, estimates its remaining useful
-life as the flight cycles until its worst defect reaches its allowable limit, and
-issues a condition based scheduling decision, namely to pull an inspection forward on a
-fast growing defect, to safely extend it on a healthy structure, or to ground a tail
-whose damage is beyond limit, each quantified against the calendar baseline. these
-states are aggregated into a fleet risk board that ranks every tail worst first, so a
-planner sees at a glance which aircraft needs attention and which is safe to defer.
-crucially the twin does not stop at prediction, it prescribes and prices. under a
-realistic hangar capacity constraint it produces an optimised service plan, servicing
-the highest risk tails first, deferring the healthy, and making explicit the residual
-risk carried when the number of at risk aircraft exceeds available slots. it attaches a
-rupee ledger to that plan, namely the downtime recovered by deferring unnecessary checks
-plus the aircraft on ground risk avoided by servicing fast growing defects in time, less
-any risk carried, expressed as a net value per planning window against the calendar
-baseline, with every monetary constant explicit and configurable so the figure is
-defensible rather than asserted. the defect detector is one sensor feeding this twin,
-and it uses unsupervised anomaly
-detection alongside supervised segmentation so that it is not dependent on large
-labelled datasets, which are inherently scarce in aerospace. an agentic assistant then
-retrieves the governing AMM and SRM provisions and prepares the corresponding work
-order under a citation required guardrail, while final acceptance remains with the
-certifying engineer, ensuring accountability is preserved. the architecture is fully
-offline, compliant with ITAR site constraints, and underpinned by a tamper evident
-audit trail, which together make it deployable within an operational hangar rather
-than a controlled laboratory. the resulting value is a transition from reactive,
-calendar based maintenance to predictive, condition based maintenance across the
-fleet, supported by traceability of regulatory standard.
+the project delivers an offline, edge resident digital twin that operates directly at the
+aircraft on a raspberry pi class device and maintains, per tail and across the fleet, the
+health record and the maintenance decision that today do not exist. its core input is
+operational sensor telemetry. an on device prognostics model, trained on real public fleet
+data, namely the ngafid general aviation flight records labelled around unplanned
+maintenance events and the nasa c mapss turbofan run to failure set, predicts for each tail
+whether it is trending toward an unscheduled maintenance event and estimates its remaining
+useful life, expressed as a calibrated confidence band rather than a single false precision
+number. crucially the prediction is explainable, a shapley attribution surfaces the exact
+sensors driving each flag, for example a rising oil temperature trend together with
+increasing vibration, and the local assistant renders that into a plain language
+maintenance note, because an unexplained prediction is not actionable for a certifying
+engineer. from that record the twin computes a health index per tail, issues a condition
+based scheduling decision, namely to pull an inspection or removal forward on a degrading
+tail, to safely extend it on a healthy one, or to ground a tail beyond limit, each
+quantified against the calendar baseline, and aggregates every tail into a fleet risk board
+ranked worst first, so a planner sees at a glance which aircraft needs attention and which
+is safe to defer. crucially the twin does not stop at prediction, it prescribes and prices.
+under a realistic hangar capacity constraint it produces an optimised service plan and
+attaches a rupee ledger, namely the downtime recovered by deferring unnecessary checks plus
+the aircraft on ground risk avoided by servicing degrading tails in time, less any risk
+carried, expressed as a net value per planning window against the calendar, with every
+monetary constant explicit and configurable so the figure is defensible rather than
+asserted. structural crack and corrosion detection is retained as one additional sensor
+feeding the same twin, using unsupervised anomaly detection alongside supervised
+segmentation so it is not dependent on scarce labelled aerospace defect data. an agentic
+assistant retrieves the governing AMM and SRM provisions and prepares the corresponding
+work order under a citation required guardrail, while final acceptance remains with the
+certifying engineer, preserving accountability. the architecture is fully offline,
+compliant with ITAR site constraints, federated so model performance improves across the
+fleet while raw data never leaves the site, and underpinned by a tamper evident audit
+trail. the resulting value is a transition from reactive, calendar based maintenance to
+predictive, condition based maintenance across the fleet, with traceability of regulatory
+standard.
 
 ----------------------------------------------------------------------
 Q47. TECHNOLOGIES AND FRAMEWORKS
 ----------------------------------------------------------------------
-each technology was selected to satisfy a specific operational constraint rather
-than for novelty. because structural cracks are fine and small in scale, the
-pipeline applies SAHI tiling and uses YOLO for detection and segmentation to recover
-accurate defect geometry rather than coarse bounding regions. to address the
-scarcity of labelled defect data, a self supervised DINOv2 backbone provides robust
-feature representation, while PatchCore, PaDiM and EfficientAD perform unsupervised
-anomaly detection without dependence on large defect corpora. to operate within
-network isolated hangars, models are quantized to INT8 and optimised through pruning
-and distillation, then deployed via ONNX Runtime, TensorFlow Lite or NCNN on a
-Raspberry Pi 5, with an optional Hailo accelerator where additional throughput is
-required. dimensional accuracy is achieved using OpenCV with ArUco fiducial
-references, which translate segmentation geometry into calibrated millimetre
-measurements evaluated against a configurable SRM limit table. defect progression is
-estimated using a Paris law fatigue crack growth formulation together with an
-empirical two scan growth rate. on top of this the digital twin layer computes, from
-the per tail record, a structural health index, a remaining useful life in flight
-cycles, and a condition based scheduling decision quantified against the calendar
-baseline, and aggregates every tail into a fleet risk board ranked worst first, and then
-solves a capacity constrained fleet service plan with a rupee ledger attached, so the
-output is not a prediction but a priced decision; this twin and planner logic is
-deterministic and unit tested, and is the core of the solution while detection is
-treated as an interchangeable sensor. the agentic layer
-employs a local quantized LLM with retrieval augmented generation over a controlled
-AMM and SRM corpus, constrained by citation required guardrails to prevent
-unsupported determinations. federated learning is implemented using Flower with
-federated averaging, allowing model performance to improve across the fleet while
-raw imagery remains on site. the supporting stack comprises PyTorch for model
-development, FastAPI with a lightweight web interface for the digital twin, and a
-hash chained log for audit integrity. public datasets including NEU-DET, SDNET2018
-and GAPs, augmented with synthetic defects, are used for initial training prior to
-transfer to aircraft surfaces.
+each technology was selected to satisfy a specific operational constraint rather than for
+novelty. the core prognostics model is a gradient boosted decision tree ensemble, lightgbm,
+chosen because it is accurate on tabular flight parameters, is small and cpu fast enough to
+run on a raspberry pi, and is natively explainable through shapley attribution, which
+supplies the driving sensors behind every prediction; a minirocket random convolution
+transform is used as the raw time series alternative, and deep time series baselines such as
+inceptiontime are held for benchmarking only. remaining useful life on turbofan data is
+framed as regression with a piecewise linear target. models are trained off device and then
+quantized to INT8 and deployed via ONNX Runtime or TensorFlow Lite on a raspberry pi 5,
+fully offline, with an optional accelerator only where additional throughput is required.
+the digital twin layer computes, from the per tail record, a health index, a remaining
+useful life with a p10 p50 p90 confidence band, and a condition based scheduling decision
+quantified against the calendar baseline, aggregates every tail into a fleet risk board
+ranked worst first, and then solves a capacity constrained fleet service plan with a rupee
+ledger attached, so the output is not a prediction but a priced decision; this twin and
+planner logic is deterministic and unit tested and is the core of the solution. a bayesian
+per tail update tightens each remaining useful life band as data accrues. the agentic layer
+employs a local quantized LLM with retrieval augmented generation over a controlled AMM and
+SRM corpus, constrained by citation required guardrails to prevent unsupported
+determinations. federated learning is implemented with federated averaging and a
+differential privacy mechanism, allowing model performance to improve across the fleet while
+only aggregate statistics, never raw data, leave a site. the supporting stack comprises a
+react frontend, a fastapi backend, pytorch and scikit learn for model development, and a
+hash chained log for audit integrity. the extra structural inspection sensor uses yolo
+segmentation with SAHI tiling and an unsupervised patchcore anomaly branch, opencv aruco
+fiducial millimetre sizing against a configurable SRM limit table, and a paris law fatigue
+crack growth progression model. public datasets, ngafid and nasa c mapss for the prognostics
+core and NEU-DET, SDNET2018 and aircraft skin sets for the inspection extra, underpin training.
 
 ----------------------------------------------------------------------
 Q48. AI CATEGORY
@@ -168,39 +199,42 @@ Hybrid AI / Combination of multiple AI approaches
 Q49. KEY BENEFITS AND IMPACT (IN NUMBERS)
 ----------------------------------------------------------------------
 the project delivers measurable operational, economic and safety benefits, and it
-quantifies them itself. the twin prices each planning window against the blind
-calendar as downtime recovered by deferring unnecessary checks on healthy aircraft,
-plus aircraft on ground risk avoided by servicing fast growing defects in time, less
-any risk carried when at risk aircraft exceed hangar capacity. on the four tail
-demonstration fleet this net value is of the order of several crore rupees per window
-under explicit, configurable assumptions. the underlying anchors are that aircraft on
-ground time is estimated at approximately rupees 8 lakh to 1.25 crore per hour, that a
-single avoided ground day represents savings in the region of rupees 2 crore, so the
-system can recover its cost on a single prevented event while operating on edge
-hardware costing approximately rupees 10,000 with no recurring cloud expenditure. the principal long term benefit derives from improved detection
-capability. reducing the smallest reliably detected defect from approximately 4mm to
-approximately 2mm, when applied within established damage tolerance analysis, can
-approximately double the safe interval between inspections, which an operator may
-realise either as reduced inspection cost or as increased safety margin. this
-enables a substantive transition from calendar based to condition based maintenance,
-reducing unnecessary structural teardowns, lowering the incidence of unscheduled
-groundings, and decreasing repeat inspections arising from inconsistent initial
-assessments. the capability also improves with scale, as each additional tail
-contributes to shared model performance through federated learning without
-incremental data cost. consistent with industry practice, detection performance is
-reported as probability of detection at the a90 95 level rather than as model
-accuracy, preserving credibility with regulators and certifying staff. the
-addressable opportunity is significant, with the Indian MRO market projected to grow
-from approximately 2 billion to 4 billion dollars by 2030 within a global MRO market
-exceeding 100 billion dollars, in which Tata and Air India hold a central position.
+quantifies them itself. the twin prices each planning window against the blind calendar as
+downtime recovered by deferring unnecessary checks on healthy aircraft, plus aircraft on
+ground risk avoided by predicting and servicing degrading tails in time, less any risk
+carried when at risk aircraft exceed hangar capacity. on the demonstration fleet this net
+value is of the order of several crore rupees per window under explicit, configurable
+assumptions. the underlying anchors are that aircraft on ground time is estimated at
+approximately rupees 8 lakh to 1.25 crore per hour, and a single avoided ground day is in
+the region of rupees 2 crore, so the system can recover its cost on a single prevented
+event while operating on edge hardware costing approximately rupees 10,000 with no recurring
+cloud expenditure. the prognostics core is trained and evaluated on real public fleet data,
+the ngafid set of approximately 29,000 real flights labelled around unplanned maintenance
+events and the nasa c mapss turbofan run to failure set, and its performance is reported
+honestly, with a recall biased operating point and a remaining useful life error, not a
+single flattering accuracy number, because a missed degradation is the expensive error in
+aerospace. every prediction is explainable through shapley attribution, which is what makes
+it acceptable to a certifying engineer. the capability improves with scale, as each
+additional tail contributes to shared model performance through federated learning without
+incremental data cost. the extra structural inspection sensor adds its own lever, reducing
+the smallest reliably detected crack from approximately 4mm to approximately 2mm, which
+within established damage tolerance analysis can approximately double the safe interval
+between inspections, reported as probability of detection at the a90 95 level rather than as
+model accuracy. the addressable opportunity is significant, the global MRO market is
+approximately 136 billion dollars in 2025 rising toward 193 billion by 2030, and the Indian
+MRO market is projected to grow from approximately 2 billion to 4 billion dollars by 2030,
+in which Tata and Air India hold a central position.
 
 ----------------------------------------------------------------------
 Q50. CURRENT STATE OF PROJECT
 ----------------------------------------------------------------------
 Prototype / Proof of Concept
-(supported by the L0 to L3 edge demonstration chain and the project progress plan;
-select Concept / Idea stage instead if the working Pi demo is not ready at the
-relevant judging round)
+(the digital twin chain -- health index, remaining useful life, capacity-constrained
+fleet plan with rupee ledger, agentic cited work order, hash-chained audit, federated
+learning with differential privacy -- is built and unit-tested; the PHM predict core on
+real telemetry, ngafid and nasa c mapss with shapley explanation and int8 edge export,
+plus the react frontend, is the active build. select Concept / Idea stage instead if the
+working Pi demo is not ready at the relevant judging round)
 
 ----------------------------------------------------------------------
 Q51. INTELLECTUAL PROPERTY (IP) PROTECTION
@@ -253,26 +287,40 @@ fifth, federated learning improves model performance across the fleet while raw
 imagery never leaves the site, and a tamper evident audit trail provides traceability
 of regulatory standard.
 
-no single existing solution combines edge native offline operation, ITAR compliant
-data handling, an integrated structural twin for each tail, damage tolerance based
-predictive scheduling, agentic manual grounded work order generation, and federated
-learning. it is this combination, rather than any individual component, that
-constitutes the novelty and the differentiation of the project.
+no single existing solution combines edge native offline operation, ITAR compliant data
+handling, an integrated per tail digital twin driven primarily by explainable on device
+prognostics from sensor telemetry, condition based predictive scheduling that is priced in
+rupees, agentic manual grounded work order generation, structural defect inspection as an
+additional sensor, and privacy preserving federated learning. it is this combination,
+rather than any individual component, that constitutes the novelty and the differentiation
+of the project.
+
+
+################################################################################
+#  DEPTH / WORKING NOTES BELOW (sections 1-18 + annexes).                       #
+#  These were authored under the ORIGINAL structural-inspection-first framing.  #
+#  Under the 2026-07-03 pivot they are the EXTRA-FEATURE (structural inspection) #
+#  + PLATFORM-VISION depth. The CANONICAL, PHM-first submission text is section  #
+#  FA above. Read anything below that says "structural twin is the core" as      #
+#  "structural inspection is one extra sensor into the PHM-core twin."           #
+################################################################################
 
 
 ================================================================================
 0. ONE-LINE PITCH
 ================================================================================
-A fully-offline structural DIGITAL TWIN for an aircraft fleet, on a Raspberry Pi 5,
-that goes PREDICT -> PRESCRIBE -> PRICE. It grows a living per-tail condition record,
-scores each aircraft's structural health and PREDICTS remaining useful life to the
-structural-repair-manual limit; it PRESCRIBES a maintenance plan across the fleet under
-real hangar capacity -- pull this tail forward, safely defer that one, ground the
-beyond-limit one, ranked worst-first; and it PRICES every call in rupees against the
-blind calendar (downtime recovered + AOG risk avoided - risk carried = net value).
-Defect detection is the sensor that feeds it; an agentic MRO copilot drafts the
-manual-cited work order for a human to sign; the fleet improves through federated
-learning, with zero raw imagery ever leaving the secure site.
+A fully-offline DIGITAL TWIN for an aircraft fleet, on a Raspberry Pi 5, that goes
+PREDICT -> PRESCRIBE -> PRICE. Its CORE input is aircraft/engine SENSOR TELEMETRY: an
+on-device, EXPLAINABLE Prognostics & Health Management model -- trained on REAL fleet data
+(NGAFID + NASA C-MAPSS) -- predicts each tail's maintenance need and remaining useful life
+BEFORE failure, and names the sensors driving every flag (SHAP). The twin scores each
+aircraft's health, PRESCRIBES a capacity-constrained fleet plan (pull forward / safely
+defer / ground, ranked worst-first), and PRICES every call in rupees against the blind
+calendar (downtime recovered + AOG risk avoided - risk carried = net value). Structural
+crack/corrosion detection is retained as ONE EXTRA sensor feeding the same twin; an agentic
+MRO copilot drafts the manual-cited work order for a human to sign; the fleet improves via
+federated learning with zero raw data leaving the secure site. PRIMARILY 3.2.3.1 Edge AI
+for Digital Twin-Enabled MRO.
 
 
 ================================================================================

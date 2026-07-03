@@ -1,67 +1,100 @@
-# Task Board — 2 people, both general/learning
+# Task Board — MRO re-tune split (2026-07-03)
 
-Problem statement: **Edge AI for Digital Twin-Enabled MRO**. The twin is the product;
-the detector is one sensor feeding it. Agree the **JSON contract** below on day one so
-you never block each other: L0 (sensor) emits it, the twin/predict/agent consume it.
+Re-tuned for the **MRO/PHM re-center** (see [PLAN.md](PLAN.md) + ACTION_PLAN §3e). The
+primary domain is now **predictive aircraft health management** on real telemetry
+(NGAFID/C-MAPSS); crack detection is a demoted extra. Split by **ML-core vs App/Frontend**
+so two people work concurrently. Hardware/Pi deployment stays deferred (software-only for now).
+The old GPU/non-GPU split (all crack-detection work) is preserved below the line as history.
 
-```json
-{ "tail": "VT-AXB", "ata_zone": "53", "location": "stringer 14",
-  "defect_type": "crack", "size_mm": 8.0, "confidence": 0.84,
-  "scan_date": "2026-07-01", "cycles": 12000 }
-```
+**Before either starts:** `git pull`. Keep big files (data, weights, videos) out of git.
 
 ---
 
-## Person A — Sensor & Edge ("the camera side")
-Owns everything that turns an image into a graded finding, and the Pi. This *feeds* the
-twin; keep the JSON contract stable and the twin doesn't care which sensor produced it.
+## Track A — Predict core (the graded heart)
 
-- [ ] **A1** Collect crack data (SDNET2018 / NEU-DET) + label ~150 aircraft-skin crops
-      (Roboflow/CVAT) in YOLO-seg format → `data/dataset/`.
-- [ ] **A2** Train `tools/train.py`; copy best weights → `models/weights/crack-seg.pt`.
-- [ ] **A3** Verify `src/l0_detect/detect.py --real` returns real detections.
-- [ ] **A4** ArUco sizing: print marker (`python -m src.l0_detect.sizing`), test on
-      `tools/make_demo_panel.py` output; confirm mm matches a ruler.
+Owns: the new PHM pipeline — dataset loaders, feature engineering, model training + SHAP,
+edge export. New dirs: `src/l4_predict/` (or similar), `data/phm/`. Don't touch the React
+app or `src/l1_twin/static/` — Track B's territory.
+
+- [ ] **A1** NGAFID loader — download (Zenodo, no login, 5.4 GB), parse the flight-header +
+      per-flight 23-sensor frames, build the before/after-maintenance labels. Small sample
+      committed for tests; full data stays out of git.
+- [ ] **A2** C-MAPSS loader — FD001–FD004, build the RUL target (piecewise-linear cap ~125).
+- [ ] **A3** First edge PHM model — **LightGBM** on engineered per-flight features (NGAFID
+      classification) + a C-MAPSS RUL regressor. Report honest metrics (recall bias / RUL error),
+      not just accuracy.
+- [ ] **A4** **SHAP** on the model → top-driver sensors per prediction. This feeds the "why"
+      panel — it is a headline feature, not optional.
+- [ ] **A5** Export ONNX/TFLite INT8; record model size + a CPU inference timing (the Pi story).
+- [ ] **A6** Expose it to the twin: a `predict(telemetry) → {maintenance_need|rul, band, top_features}`
+      function the FastAPI layer can call and the twin can consume alongside the existing findings.
+
+## Track B — App, twin integration & frontend (React)
+
+Owns: `src/l1_twin/*` (FastAPI + API), the new **React** app, `docs/*`. Reuse the existing
+twin/planner/agent/audit — wire the new predict output into them; don't rewrite them.
+
+- [ ] **B1** Scaffold the **React** app (Vite + TS + Tailwind + react-three-fiber + Recharts).
+      **Page 1 = Predictive Aircraft Health (pure MRO)**, Page 2 = Structural Inspection (extra),
+      Page 3 = Fleet Learning & Edge. Only MRO on Page 1.
+- [ ] **B2** JSON API: add `/api/predict` (+ per-tail prediction/RUL/SHAP) feeding the existing
+      `/api/fleet` `/api/tail` `/api/whatif` etc. Keep the honest synthetic/real flags.
+- [ ] **B3** Migrate the 3D twin (current vendored Three.js `static/index.html`) into
+      **react-three-fiber** on Page 1 — health-shaded airframe, RUL bands, the "why flagged"
+      SHAP panel, rupee ledger, edge HUD.
+- [ ] **B4** Move all crack/corrosion/anomaly UI to **Page 2** (structural inspection).
+- [ ] **B5** Wire the offline GenAI copilot to narrate the SHAP top-features as a plain-English
+      maintenance note (citation-gated, deterministic fallback stays).
+
+## Structural inspection — maintenance only (was the whole project, now the extra)
+
+Existing crack pipeline is done and green; just keep it working as a Page-2 sensor. No new
+investment unless Track A/B are fully landed.
+- [ ] **X1** Keep `python -m src.pipeline --seed` green; ensure the crack detector still loads
+      under `--real` after the re-tune. (Base model: ~67% box / ~43% mask recall — say so.)
+
+## Shared
+- [ ] **S1** Once A6 + B2 land: end-to-end check — telemetry in → prediction + why → twin →
+      ledger → work order → audit, all offline.
+- [ ] **S2** Full offline dry-run — deferred to the hardware/Pi phase (not blocking now).
+
+---
+
+# (superseded) Original Person A / Person B split — kept for history
+
+Problem statement: **Edge AI for Digital Twin-Enabled MRO**. The twin is the product;
+the detector is one sensor feeding it. JSON contract locked early (see git history) —
+L0 (sensor) emits it, the twin/predict/agent consume it.
+
+## Person A — Sensor & Edge ("the camera side")
+- [x] **A1** Collect crack data — done, `crack-seg` (4,029 real imgs, auto-downloads).
+- [x] **A2** Train `tools/train.py` — done, see Track A above for current status.
+- [ ] **A3** Verify `src/l0_detect/detect.py --real` returns real detections — folded
+      into Track A / A1 above.
+- [ ] **A4** ArUco sizing — verified independently this session (real marker 0.2513
+      mm/px, no-marker fallback 0.025 — both correct).
 - [ ] **A5** Tune `src/l0_detect/grade.py` + `data/srm_limits.csv` for your defects.
-- [ ] **A6** Export INT8 ONNX; run on the Pi 5 (airplane mode); record latency/FPS
-      (CPU-only — state it honestly).
-- [ ] **A7** Build the induced-defect panel (scored crack, corrosion patch, dent, loose
-      bolt as FOD) and photograph it with a phone.
+- [ ] **A6** Export INT8 ONNX; run on the Pi 5 — export path proven (Track A A2);
+      Pi run itself deferred to the hardware phase.
+- [ ] **A7** Build the induced-defect panel and photograph it with a phone.
 
 ## Person B — Twin, Fleet & Pitch ("the product + story side")
-Owns the twin brain, the fleet board, the agent, and the deliverables. **The twin is the
-hero — this is where the demo wins.**
-
-- [ ] **B1** Polish `src/l1_twin/view.py` — the **fleet risk board** is the money shot;
-      make it screen-record-ready (it already ranks tails + shows the CBM call).
-- [ ] **B2** Calibrate `src/l1_twin/twin.py` constants (`CALENDAR_INTERVAL_CYCLES`,
-      `DTA_INSPECT_FRACTION`) + `src/l2_progress/paris.py` so the pull-forward / defer
-      calls are sane and defensible. Keep `python -m src.l1_twin.twin` (self-check) green.
-- [ ] **B2b** Calibrate `src/l1_twin/planner.py` economics (`DOWNTIME_COST_PER_CHECK`,
-      `AOG_EVENT_COST`, `HANGAR_CAPACITY`) to real operator numbers so the **rupee ledger**
-      holds up under Q&A. Keep `python -m src.l1_twin.planner` (self-check) green. This is
-      the money slide — have a one-line source for every constant.
-- [ ] **B3** Upgrade `src/l3_agent/agent.py` to a local LLM (Ollama phi3/qwen) over the
-      manual corpus, keeping the **citation-required guardrail** + human gate.
-- [ ] **B4** Confirm `src/l3_agent/audit.py verify()` stays true; show a tamper demo
-      (edit a log line → verify() fails) — great for the security slide.
-- [ ] **B5** Build the **PPT** on the official Section-4 template (content from
-      `docs/deck-outline.md` + `Submission/01_Presentation/`). Lead with the twin.
-- [ ] **B6** Set up the **Google Drive folder** (Viewer access), add ID scans + POC media
-      (fleet-board screenshot is the headline image).
-- [ ] **B7** Record & edit the 3-minute demo video (chain → fleet board → agent → audit).
-
-## Shared / integration
-- [ ] **S1** Lock the JSON contract above (do this first).
-- [ ] **S2** Run `python -m src.pipeline --seed` then `--image <real photo> --real`
-      end-to-end; confirm sensor → twin → fleet board all fire.
-- [ ] **S3** Full offline dry-run on the Pi the night before any deadline.
+- [x] **B1** Polish `src/l1_twin/view.py` — done (fleet risk board, work-order
+      surfacing, multiple UI passes — see ACTION_PLAN.md sessions 2-5).
+- [x] **B2** Calibrate `twin.py` / `paris.py` constants — done, self-checks green.
+- [x] **B2b** Calibrate `planner.py` economics — done, self-check green.
+- [x] **B3** Local LLM (Ollama) — done, `llama3.2:3b` (phi3 can't tool-call).
+- [x] **B4** `audit.py verify()` tamper demo — done (and a fail-safe fix pending in
+      the finish-l0-l3-app merge, see Track B B1 above).
+- [ ] **B5** Build the PPT (`docs/deck-outline.md`).
+- [ ] **B6** Google Drive folder + POC media.
+- [ ] **B7** Record the 3-minute demo video (`docs/demo-script.md`).
 
 ## Git workflow (simple, safe for 2 people)
 ```bash
-git checkout -b a-sensor         # each works on a branch
+git checkout -b your-branch-name
 # ... commit small, often ...
-git push origin a-sensor         # open a PR / merge to master
-git pull origin master           # sync before starting each session
+git push origin your-branch-name       # open a PR / merge to feat/session5-honesty-real-ml
+git pull                                # sync before starting each session
 ```
 Keep big files (weights, videos) OUT of git (already in .gitignore) — share via Drive.

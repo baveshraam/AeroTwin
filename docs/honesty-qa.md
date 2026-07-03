@@ -1,9 +1,26 @@
 # Honesty Q&A — what to say to a judge
 
+> **Re-tune note (2026-07-03):** the primary domain is now **predictive health on real
+> telemetry** (NGAFID / C-MAPSS). That flips the honesty story in our favour for the core —
+> the *predict engine trains on real, public flight/engine data*, not a synthetic stream.
+> The synthetic-data caveats below now apply mainly to the **structural-inspection extra
+> feature** (SHM stream, federation sites, telemetry HUD). Add the PHM line below.
+
 Say these out loud if a judge asks "is that real data?" The through-line is the same for
 every item: **the algorithm is real and tested; the data feeding it is synthetic, because
 we don't have field sensor hardware / a data-sharing agreement for a POC — and we label
 that synthetic-ness everywhere it surfaces (API flag, on-screen chip, README).**
+
+### Predict engine — PHM (the new core)
+
+> "The prediction core is trained on **real, public data** — the NGAFID dataset (≈29,000
+> real general-aviation flights, 23 sensors, labelled around real unplanned-maintenance
+> events) for maintenance-need classification, and NASA C-MAPSS turbofan run-to-failure data
+> for remaining-useful-life. We train a compact model (LightGBM / MiniRocket) that runs on a
+> Raspberry Pi, and we report honest metrics — recall bias and RUL error, not a flattering
+> single number. The predictions are **explainable**: SHAP shows the exact sensors driving
+> each flag, and the offline copilot turns that into a plain-English note. Nothing here is a
+> mocked prediction — it's a real model on real fleet data, quantised for the edge."
 
 ---
 

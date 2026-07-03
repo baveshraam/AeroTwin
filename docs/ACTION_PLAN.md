@@ -1,9 +1,17 @@
 # AeroTwin-Edge — Action Plan (the "buff" pass)
 
-Master record of the 2026-07-01 planning + build session: why the repo changed shape,
-every decision made, the full dataset research, what got built, and what's still open.
-This supersedes the narrower [PLAN.md](PLAN.md) as the current source of truth; PLAN.md
-stays as the original pre-shortlist strategy for historical context.
+Master **build-history log**: why the repo changed shape, every decision made, the full
+dataset research, what got built. For the current *direction*, [PLAN.md](PLAN.md) is now the
+north-star (rewritten 2026-07-03 for the MRO re-tune); this file remains the chronological
+record of what was actually built.
+
+> ⚠️ **RE-TUNE (2026-07-03, Session 5):** the project has been re-centered. The **primary
+> domain is now predictive aircraft health management (PHM)** — sensor telemetry → failure/RUL
+> prediction on real datasets (NGAFID, C-MAPSS) — because judges grade *depth in the primary
+> domain, not feature count*, and the repo had drifted too far into crack detection.
+> **Crack/structural inspection is demoted to an "extra sensor" feature** and moved off the
+> front page. **Frontend moves HTML → React.** See §3e below and PLAN.md. Everything below
+> §3e was built under the earlier structural-twin framing and is *reused*, not discarded.
 
 ## 0. Why this pass happened
 
@@ -170,6 +178,39 @@ depth-broken halo) shows **zero** amber glow outside the airframe; (3) defect ho
 markers **on the skin**, not floating. **Key visual finding:** a near-white airframe (`#f4f6f9`) was
 invisible against the light stage (white-on-white) — the fix was a mid silver-grey `#aeb7c2` airframe
 plus a close low side-quarter hero framing so the fuselage/windows/wing fill the frame and read.
+
+## 3e. Session 5 (2026-07-03) — the MRO re-tune (direction change, not yet built)
+
+Directive from the user: the project diverted too far into **crack detection**; the app is
+graded on **implementation depth in the primary domain (Edge AI · Digital Twin · MRO)**, not
+total feature count. So re-center on **predictive maintenance / PHM**, make that the main
+point, demote crack detection to an extra feature, put **only pure MRO on the front page**,
+and move the frontend to **React**. Datasets to train on were provided (NGAFID, C-MAPSS).
+
+**Decisions locked this session:**
+
+| Topic | Decision |
+|---|---|
+| Project name | **AeroTwin : Edge-AI Digital Twins for Predictive Aircraft Health Management** (tagline "predicting failures before they ground the fleet") |
+| Primary core | **PHM at the edge** — sensor telemetry → maintenance-need / RUL prediction + SHAP "why" + GenAI note. Trained on **NGAFID** (real GA flight data, classification) + **NASA C-MAPSS** (turbofan RUL). |
+| Model direction | **LightGBM** (explainable via SHAP, tiny/CPU-fast on Pi) and/or **MiniRocket**; deep nets (InceptionTime) benchmark-only. Train off-device → ONNX/TFLite INT8 → Pi. *Exact model/features finalised later.* |
+| Crack detection | **Demoted to "extra sensor"** — kept, feeds the same twin, lives on **Page 2** of the app, appears once (slide 12) in the deck. |
+| Frontend | **HTML → React** (+ TypeScript, Vite, react-three-fiber for the 3D twin, Tailwind, Recharts). Backend stays FastAPI. |
+| What's reused | The entire twin chain — health index, MC RUL, Bayesian + federated + DP learning, planner + rupee ledger, agent work order, hash-chained audit. We change *what feeds the twin*, not the twin. |
+
+**Datasets checked live this session (Bhavesh's links):** NGAFID (real, CC BY 4.0, 5.4 GB,
+Zenodo — the standout), NASA C-MAPSS (public, tiny — but 3 of the 4 shared repos were all the
+same C-MAPSS RUL tutorial), plus two C-MAPSS repos (SureshAthanti, AirML). **None ship usable
+pretrained weights** — AirML's are gated behind an email; the rest train from scratch. Correct
+outcome: we train + quantise our own edge model. AirML is a reusable full-stack *skeleton* only
+(check its licence).
+
+**Status:** this is a **direction change captured in docs only** — no MRO-core code written
+yet. Docs updated this session: PLAN.md (rewritten as north-star), deck-outline.md (reordered,
+predictive MRO leads), DATASETS.md (NGAFID/C-MAPSS promoted to §1, crack sets demoted to
+§Structural), task-board.md (new tracks), demo-script.md + honesty-qa.md (re-tune banners).
+Next build steps: NGAFID/C-MAPSS loaders → first edge PHM model + SHAP → React scaffold with
+MRO on Page 1 → migrate 3D twin into react-three-fiber → structural inspection to Page 2.
 
 ## 4. What's still open
 
