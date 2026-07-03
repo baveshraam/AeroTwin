@@ -199,6 +199,31 @@ def api_ask(question: str) -> dict:
     return copilot.ask(question)
 
 
+@app.get("/api/audit")
+def api_audit() -> dict:
+    """The tamper-evident hash chain — every airworthiness decision, SHA-256 linked.
+    Returns a compact view (hash, prev, tail, summary, citation) + the live verify status."""
+    import json as _json
+    from src.l3_agent import audit
+    entries = []
+    if audit.LOG.exists():
+        for line in audit.LOG.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            e = _json.loads(line)
+            p = e.get("payload", {}) or {}
+            wo = p.get("work_order", {}) or {}
+            f = p.get("finding", {}) or {}
+            entries.append({
+                "hash": e["hash"], "prev": e["prev"],
+                "tail": f.get("tail"),
+                "summary": wo.get("summary") or wo.get("reason") or f.get("defect_type") or "decision logged",
+                "citation": wo.get("citation"), "status": wo.get("status"),
+            })
+    return {"verified": audit.verify(), "count": len(entries),
+            "genesis": audit.GENESIS, "entries": entries}
+
+
 @app.get("/api/federated")
 def api_federated() -> dict:
     """ITAR-safe federated growth-prior simulation across hangars."""

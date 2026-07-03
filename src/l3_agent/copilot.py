@@ -44,7 +44,17 @@ def _get_tail_state(tail: str) -> dict:
     return s or {"error": f"no such tail {tail}"}
 
 
-TOOLS = {"get_srm_limit": _get_srm_limit, "get_rul": _get_rul, "get_tail_state": _get_tail_state}
+def _get_fleet_summary() -> dict:
+    from src.l1_twin.twin import fleet_summary  # lazy: avoids import cycle at module load
+    s = fleet_summary()
+    return {"tails": len(s),
+            "grounded": [x["tail"] for x in s if x.get("grounded")],
+            "worst": s[0]["tail"] if s else None,
+            "board": [{"tail": x["tail"], "health": x["health"], "action": x.get("action")} for x in s]}
+
+
+TOOLS = {"get_srm_limit": _get_srm_limit, "get_rul": _get_rul,
+         "get_tail_state": _get_tail_state, "get_fleet_summary": _get_fleet_summary}
 
 TOOL_SPECS = [
     {"type": "function", "function": {"name": "get_srm_limit",
@@ -61,6 +71,9 @@ TOOL_SPECS = [
         "description": "Current twin state (health, RUL, recommended action) for a tail number",
         "parameters": {"type": "object", "properties": {"tail": {"type": "string"}},
             "required": ["tail"]}}},
+    {"type": "function", "function": {"name": "get_fleet_summary",
+        "description": "Fleet-wide summary: tail count, which tails are grounded, the highest-priority tail, and the ranked board",
+        "parameters": {"type": "object", "properties": {}}}},
 ]
 
 SYSTEM = ("You are an MRO structural-maintenance copilot. Use tools for any number "
@@ -103,6 +116,15 @@ def _offline_agent(question: str) -> dict:
     ata = ata.group(1) if ata else "53"
     mm = [float(x) for x in re.findall(r"(\d+(?:\.\d+)?)\s*mm", q)]
     tail = re.search(r"\bvt[-\s]?([a-z]{2,3})\b", q)
+
+    # fleet-wide intent (before the per-tail branch): "which aircraft need attention", "worst tail"
+    if not tail and any(k in q for k in ("fleet", "worst", "attention", "priorit", "which aircraft",
+                                          "which tail", "most urgent", "overview")):
+        fs = run("get_fleet_summary")
+        gnd = ", ".join(fs["grounded"]) or "none"
+        ans = (f"Fleet of {fs['tails']} tails. Grounded (beyond limit): {gnd}. "
+               f"Highest priority now: {fs['worst']}. Ranked plan is on the fleet risk board.")
+        return {"answer": ans, "tool_trace": trace, "llm": False}
 
     # tail-state intent
     if tail or "health" in q or "state of" in q or "grounded" in q:
