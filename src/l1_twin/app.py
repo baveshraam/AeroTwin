@@ -22,52 +22,36 @@ from src.l0_detect.grade import grade_defect
 from src.l1_twin import db, federated, shm
 from src.l1_twin.planner import fleet_plan, scenario_add_capacity, scenario_defer, spares_forecast
 from src.l1_twin.twin import _growth_rate, fleet_summary, project_fleet
-from src.l1_twin.view import render_home
 from src.l2_progress.paris import project_growth
 from src.l3_agent import copilot, workorder
 from src.l3_agent.agent import draft_work_order
 
-STATIC = Path(__file__).resolve().parent / "static"
 MODEL_ASSETS = Path(__file__).resolve().parents[2] / "Airplane-body"
-app = FastAPI(title="AeroTwin-Edge - Digital Twin")
+FRONTEND = Path(__file__).resolve().parents[2] / "frontend" / "dist"   # the built React app
+app = FastAPI(title="AeroTwin - Edge Digital Twin")
 # The airframe OBJ is ~12 MB of ASCII; gzip cuts it ~4-5x on the wire. Big win for the Pi's
-# slow SD-card/network read and for cold-load; near-zero cost on a laptop. (Parse time is
-# CPU-bound and unchanged — the honest bottleneck; a Draco-compressed GLB is the next step.)
+# slow SD-card/network read and for cold-load; near-zero cost on a laptop.
 app.add_middleware(GZipMiddleware, minimum_size=1024)
-if STATIC.exists():
-    app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")
 if MODEL_ASSETS.exists():
     app.mount("/model-assets", StaticFiles(directory=str(MODEL_ASSETS)), name="model-assets")
+if FRONTEND.exists():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND / "assets")), name="assets")
+    if (FRONTEND / "vendor").exists():
+        app.mount("/vendor", StaticFiles(directory=str(FRONTEND / "vendor")), name="vendor")
 
 
-@app.get("/preview-model", response_class=HTMLResponse)
-def preview_model() -> HTMLResponse:
-    page = STATIC / "preview-model.html"
-    return HTMLResponse(page.read_text(encoding="utf-8"))
+def _spa() -> HTMLResponse:
+    """Serve the built React single-page app (offline, no build step at runtime)."""
+    index = FRONTEND / "index.html"
+    if index.exists():
+        return HTMLResponse(index.read_text(encoding="utf-8"))
+    return HTMLResponse("<h1>AeroTwin</h1><p>Frontend not built — run "
+                        "<code>cd frontend &amp;&amp; npm run build</code>.</p>")
 
 
 @app.get("/", response_class=HTMLResponse)
 def home() -> HTMLResponse:
-    index = STATIC / "index.html"
-    if index.exists():
-        return HTMLResponse(index.read_text(encoding="utf-8"))
-    return HTMLResponse(render_home())  # fallback until the 3D page is vendored
-
-
-@app.get("/light", response_class=HTMLResponse)
-@app.get("/dark", response_class=HTMLResponse)
-def home_theme() -> HTMLResponse:
-    """Same dashboard; theme is chosen client-side from the path. Light/cream is the default
-    at / (and /light); /dark opts into the dark-glass theme."""
-    index = STATIC / "index.html"
-    if index.exists():
-        return HTMLResponse(index.read_text(encoding="utf-8"))
-    return HTMLResponse(render_home())
-
-
-@app.get("/classic", response_class=HTMLResponse)
-def classic() -> str:
-    return render_home()
+    return _spa()
 
 
 @app.get("/api/fleet")
@@ -249,3 +233,10 @@ def api_telemetry() -> dict:
         "power_w": round(6.2 + 0.4 * math.sin(t / 2), 1),
         "offline": True,
     }
+
+
+# SPA fallback — registered LAST so it never shadows the /api routes or the asset mounts.
+# Client-side routes (/aircraft, /copilot, /learning, /planning) all serve the React shell.
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+def spa_fallback(full_path: str) -> HTMLResponse:
+    return _spa()
