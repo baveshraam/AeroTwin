@@ -3,6 +3,7 @@ import { TwinProvider, useTwin } from './DataContext'
 import Overview from './pages/Overview'
 import FleetPlanning from './pages/FleetPlanning'
 import AircraftHealth from './pages/AircraftHealth'
+import CopilotAudit from './pages/CopilotAudit'
 import LearningEdge from './pages/LearningEdge'
 
 function Hud() {
@@ -22,18 +23,20 @@ function Shell() {
       <div className="brand"><span className="dot" /><b>AeroTwin</b><s>·Edge</s></div>
       <div className="navlinks">
         <NavLink to="/" end>Overview</NavLink>
-        <NavLink to="/planning">Fleet &amp; Planning</NavLink>
         <NavLink to="/aircraft">Aircraft Health</NavLink>
-        <NavLink to="/learning">Learning &amp; Edge</NavLink>
+        <NavLink to="/copilot">Copilot &amp; Audit</NavLink>
+        <NavLink to="/learning">Fleet Learning</NavLink>
+        <NavLink to="/planning">Planning &amp; Cost</NavLink>
       </div>
       <Hud />
     </nav>
     <div className="container">
       <Routes>
         <Route path="/" element={<Overview />} />
-        <Route path="/planning" element={<FleetPlanning />} />
         <Route path="/aircraft" element={<AircraftHealth />} />
+        <Route path="/copilot" element={<CopilotAudit />} />
         <Route path="/learning" element={<LearningEdge />} />
+        <Route path="/planning" element={<FleetPlanning />} />
       </Routes>
     </div>
   </>

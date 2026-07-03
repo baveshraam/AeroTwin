@@ -1,5 +1,5 @@
 import { useTwin } from '../DataContext'
-import { HealthRing, Defects, SHM, Cert } from '../panels'
+import { HealthRing, Defects, SHM, Cert, PredictionConfidence } from '../panels'
 import { attn } from '../api'
 
 export default function AircraftHealth() {
@@ -29,20 +29,26 @@ export default function AircraftHealth() {
         </div>
       </div>
 
-      <div className="card">
-        <h2>Open defects · RUL bands <span className="tt">{sel || '—'}</span></h2>
-        <Defects />
-      </div>
-
       <div className="grid c2">
         <div className="card">
-          <h2>Between-inspection SHM <span className="synthflag" style={{ fontSize: 8, padding: '2px 7px' }}>SYNTHETIC STREAM</span></h2>
-          <SHM />
+          <h2>Prediction &amp; confidence <span className="tt">maintenance-need · RUL</span></h2>
+          <PredictionConfidence />
         </div>
         <div className="card">
           <h2>Certification · tamper-evident</h2>
           <Cert />
         </div>
+      </div>
+
+      <div className="card">
+        <h2>Open defects · RUL bands <span className="tt">{sel || '—'}</span></h2>
+        <Defects />
+      </div>
+
+      <div className="card">
+        <h2>Between-inspection monitoring (SHM) <span className="synthflag" style={{ fontSize: 8, padding: '2px 7px' }}>SYNTHETIC STREAM</span></h2>
+        <p className="caption" style={{ marginTop: 0, marginBottom: 14 }}>Between scheduled inspections, fused sensor signals are watched for a sudden change (a CUSUM change-point) that means a defect is growing faster than expected — an early warning to inspect before the next check.</p>
+        <SHM />
       </div>
     </div>
   )

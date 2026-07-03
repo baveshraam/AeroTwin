@@ -102,7 +102,7 @@ export default forwardRef<SceneHandle, { onDefectClick?: (i: number) => void }>(
         loader.load('airplane.obj', (o: any) => {
           o.rotation.x = -Math.PI / 2; o.updateMatrixWorld(true)
           let box = new THREE.Box3().setFromObject(o); const size = new THREE.Vector3(); box.getSize(size)
-          o.scale.setScalar((FL * 1.05) / Math.max(size.x, size.y, size.z)); o.updateMatrixWorld(true)
+          o.scale.setScalar((FL * 0.82) / Math.max(size.x, size.y, size.z)); o.updateMatrixWorld(true)  // smaller, minimalist framing
           box = new THREE.Box3().setFromObject(o); const c = new THREE.Vector3(); box.getCenter(c)
           o.position.sub(c); o.updateMatrixWorld(true)
           o.traverse((m: any) => {
@@ -160,7 +160,11 @@ export default forwardRef<SceneHandle, { onDefectClick?: (i: number) => void }>(
       return { pos: new THREE.Vector3(x, Math.cos(ang) * R, Math.sin(ang) * R), nrm: dir.clone() }
     }
     function clearHotspots() { hotspots.forEach(h => plane.remove(h.grp)); hotspots = [] }
+    // Minimalist: defect markers on the airframe are intentionally OFF (defects live in the
+    // Aircraft Health page). Left as a no-op so the rest of the wiring stays intact.
+    const SHOW_MARKERS = false
     function addHotspot(def: any) {
+      if (!SHOW_MARKERS) return
       const { pos, nrm } = skinPointFor(def)
       const sz = GRADE_SIZE[def.grade] || 0.7
       const grp = new THREE.Group(); grp.position.copy(pos).add(nrm.clone().multiplyScalar(0.012))

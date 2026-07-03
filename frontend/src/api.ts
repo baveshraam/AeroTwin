@@ -12,6 +12,7 @@ export const getWorkorders = () => j('/api/workorders')
 export const postWO = (path: string) => fetch(path, { method: 'POST' }).then(r => r.json())
 export const getScrub = (c: number) => j('/api/scrub?cycles=' + c)
 export const getTelemetry = () => j('/api/telemetry')
+export const getAudit = () => j('/api/audit')
 export const ask = (q: string) => j('/api/ask?question=' + encodeURIComponent(q), { method: 'POST' })
 
 // ₹ formatter — identical to the original inr()
