@@ -11,21 +11,26 @@ under the SAME safety contract:
   * OFFLINE: talks to a local Ollama (localhost:11434). If none is running, every path
     degrades to the deterministic template so the demo never depends on a model.
 
-Setup (optional):  install Ollama, `ollama pull phi3`  (or qwen2.5, llama3.2).
+Setup (optional):  install Ollama, `ollama pull llama3.2:3b`  (or qwen2.5).
+Model choice matters here, not just size: `ask()` calls Ollama with `tools=`, and
+Ollama 400s outright ("model does not support tools") for models whose template has no
+tool-calling support -- phi3 is one of these, confirmed live. llama3.2 (and qwen2.5) do
+support it. If you swap OLLAMA_MODEL, verify tool-calling still works before relying on it.
 Env: OLLAMA_URL, OLLAMA_MODEL.
 """
 from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.request
 
 from src.l0_detect.grade import grade_defect
 from src.l2_progress.paris import paris_rul_mc
-from src.l3_agent.agent import draft_work_order, retrieve
+from src.l3_agent.agent import draft_work_order
 
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "phi3")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:3b")
 
 
 # ---------- tools the model may call (real functions over the twin) ----------
@@ -77,8 +82,10 @@ TOOL_SPECS = [
 ]
 
 SYSTEM = ("You are an MRO structural-maintenance copilot. Use tools for any number "
-          "(limits, RUL, health) — never guess one. Cite the SRM manual reference for "
-          "any airworthiness limit. A certifying engineer signs off; you only advise.")
+          "(limits, RUL, health) — never guess one. RUL/cycle figures from get_rul are "
+          "in FLIGHT CYCLES, not years or hours — always say 'cycles'. Cite the SRM "
+          "manual reference for any airworthiness limit. A certifying engineer signs "
+          "off; you only advise.")
 
 
 def ollama_up() -> bool:
@@ -165,6 +172,20 @@ def _offline_agent(question: str) -> dict:
             "(e.g. 'state of VT-AXB').", "tool_trace": trace, "llm": False}
 
 
+_SRM_REF = re.compile(r"SRM[\s-]*[\w./-]+", re.IGNORECASE)
+
+
+def _drop_uncited_srm(answer: str, trace: list[dict]) -> str:
+    """Guardrail for the free-form chat path: draft_with_copilot() only keeps LLM prose
+    when its citation is verifiably one draft_work_order retrieved -- ask() has no such
+    check today, and live testing (llama3.2:3b) caught it inventing a citation
+    ("SRM-001, Section 5.3.1") that appears nowhere in the corpus for a plain RUL
+    question that never involved a citation at all. Same fix, same shape: strip any
+    SRM-looking reference in the prose that isn't verbatim in a tool result."""
+    backing = json.dumps(trace)
+    return _SRM_REF.sub(lambda m: m.group(0) if m.group(0) in backing else "[uncited reference removed]", answer)
+
+
 def ask(question: str, max_steps: int = 4) -> dict:
     """Answer an MRO question, letting the model call twin tools. When no Ollama is present,
     a deterministic tool-router still executes the real tools (agentic, just not prose)."""
@@ -176,7 +197,8 @@ def ask(question: str, max_steps: int = 4) -> dict:
         msg = _chat(messages, TOOL_SPECS)
         calls = msg.get("tool_calls") or []
         if not calls:
-            return {"answer": msg.get("content", ""), "tool_trace": trace, "llm": True}
+            answer = _drop_uncited_srm(msg.get("content", ""), trace)
+            return {"answer": answer, "tool_trace": trace, "llm": True}
         messages.append(msg)
         for call in calls:
             fn = call["function"]["name"]
@@ -220,8 +242,21 @@ def _demo() -> None:
         {"tail": "T", "ata_zone": "99", "location": "x", "defect_type": "mystery", "size_mm": 5.0},
         {"grade": "major", "airworthiness": "", "manual_ref": None}, "n/a")
     assert no_ref["status"] == "ESCALATE", no_ref
+
+    # guardrail: a fabricated citation the model invents on its own (not backed by any
+    # tool result) must be stripped from ask()'s free-form answers -- caught live against
+    # llama3.2:3b, which cited "SRM-001, Section 5.3.1" for a plain RUL question that
+    # involved no citation at all.
+    fake_trace = [{"tool": "get_rul", "args": {}, "result": band}]
+    cleaned = _drop_uncited_srm("Per SRM-001, Section 5.3.1, the RUL is 22,117 cycles.", fake_trace)
+    assert "SRM-001" not in cleaned and "[uncited reference removed]" in cleaned, cleaned
+    real_trace = [{"tool": "get_srm_limit", "args": {}, "result": {"manual_ref": "SRM 53-30-01"}}]
+    kept = _drop_uncited_srm("Per SRM 53-30-01, the limit is 12.0 mm.", real_trace)
+    assert "SRM 53-30-01" in kept and "[uncited" not in kept, kept
+
     print(f"copilot self-check OK  |  SRM limit tool=12.0mm, RUL P50={band['p50']:,} cyc, "
-          f"guardrail escalates w/o citation, ollama_up={ollama_up()}")
+          f"guardrail escalates w/o citation, drops uncited citations in chat, "
+          f"ollama_up={ollama_up()}")
 
 
 if __name__ == "__main__":

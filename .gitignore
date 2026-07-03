@@ -23,6 +23,10 @@ data/raw/
 # tools/fetch_datasets.py / regenerate with tools/train.py instead of pushing
 data/datasets/
 runs/
+# ultralytics' own datasets_dir setting only takes effect from the NEXT process
+# (it's cached at import time) -- a stray top-level datasets/ can appear on a
+# fresh clone's first fetch/train invocation before that setting "sticks".
+/datasets/
 
 # Media is big — keep demo media in Google Drive, not git
 *.mp4
@@ -35,3 +39,9 @@ runs/
 
 # Local Claude Code tool settings
 .claude/
+
+# Secrets — API keys must never be committed
+roboflow-key-1
+roboflow-publishable-api-key
+*api-key*
+*.key

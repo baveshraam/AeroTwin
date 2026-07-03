@@ -74,12 +74,21 @@ def train_adapt(data_yaml: str, epochs: int, imgsz: int, batch: int,
     _report_pod(best, data_yaml)
 
 
-def export_edge(imgsz: int = 640) -> None:
-    """INT8 ONNX for the Raspberry Pi (airplane-mode edge inference)."""
+def export_edge(imgsz: int = 1280, device: str = "cpu", calib_data: str = "crack-seg.yaml") -> None:
+    """INT8 ONNX for the Raspberry Pi (airplane-mode edge inference). Defaults to CPU
+    since the deployment target (the Pi) has no GPU -- pass device="cuda" only to
+    speed up the int8 calibration pass itself on a machine that has a free GPU.
+
+    calib_data MUST be a real crack/aircraft set, not left to ultralytics' own default:
+    with no `data=`, it silently downloads generic coco8-seg (8 furniture/animal images)
+    over the network for calibration -- both a hole in "fully offline" and statistically
+    the wrong image distribution to calibrate a crack detector's INT8 ranges against.
+    """
     if not DEPLOY_WEIGHTS.exists():
         raise SystemExit(f"No {DEPLOY_WEIGHTS} yet — train (and --deploy-base) first.")
     from ultralytics import YOLO
-    YOLO(str(DEPLOY_WEIGHTS)).export(format="onnx", int8=True, imgsz=imgsz)
+    YOLO(str(DEPLOY_WEIGHTS)).export(format="onnx", int8=True, imgsz=imgsz, device=device,
+                                      data=calib_data)
     print("Exported INT8 ONNX next to the .pt — copy to the Pi; run with onnxruntime.")
 
 
@@ -121,6 +130,10 @@ def main() -> None:
     ap.add_argument("--export", action="store_true", help="INT8 ONNX for the Pi")
     ap.add_argument("--deploy-base", action="store_true", dest="deploy_base",
                     help="promote crack-base.pt -> crack-seg.pt so --real uses the base detector")
+    ap.add_argument("--export-device", default="cpu", help="device for the export/calibration pass")
+    ap.add_argument("--calib-data", default="crack-seg.yaml",
+                     help="real dataset for INT8 calibration (never leave this to ultralytics' "
+                          "own coco8-seg default -- see export_edge docstring)")
     ap.add_argument("--epochs", type=int, default=100)
     ap.add_argument("--imgsz", type=int, default=1280)
     ap.add_argument("--batch", type=int, default=8)
@@ -133,7 +146,7 @@ def main() -> None:
     if args.deploy_base:
         deploy_base()
     elif args.export:
-        export_edge(args.imgsz)
+        export_edge(args.imgsz, args.export_device, args.calib_data)
     elif args.stage == "base":
         train_base(args.epochs, args.imgsz, args.batch, args.model, args.fraction, args.device)
     elif args.stage == "adapt":

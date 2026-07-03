@@ -249,7 +249,7 @@ def _demo() -> None:
     sep = np.mean(dmg) > np.mean(clean)
     print(f"\ndamage flagged      : {flagged}/5   false alarms: {missed}/5")
     print(f"separation (dmg>norm): {'OK' if sep else 'WEAK (random backbone / needs pretrained weights)'}")
-    print("\nReport POD (probability of detection) + false-alarm rate, not a single number —")
+    print("\nReport POD (probability of detection) + false-alarm rate, not a single number -")
     print("a missed crack is the expensive error in aerospace.")
 
 
