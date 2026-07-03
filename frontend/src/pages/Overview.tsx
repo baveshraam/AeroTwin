@@ -16,6 +16,11 @@ export default function Overview() {
   const openFindings = states.reduce((a: number, s: any) => a + (s.open_defects || 0), 0)
   const avg = states.length ? Math.round(states.reduce((a: number, s: any) => a + (s.grounded ? 0 : s.health), 0) / states.length) : 0
 
+  // status of the selected aircraft — drives the floating "pointer" chip over the 3D
+  const status = st.grounded ? { c: 'var(--red)', l: 'grounded', attn: true }
+    : (st.health != null && st.health < 40) ? { c: 'var(--amber)', l: 'needs attention', attn: true }
+      : { c: 'var(--cyan)', l: 'healthy', attn: false }
+
   return (
     <div className="page">
       <div className="page-head">
@@ -27,6 +32,10 @@ export default function Overview() {
       {/* the 3D twin — a spacious, minimalist hero */}
       <div className="stage-card">
         <ThreeScene ref={scene} onDefectClick={(i) => scene.current?.flyToDefect(i)} />
+        <div className="hud-frame" />
+        {tail ? <div className={`statuschip ${status.attn ? 'attn' : ''}`} style={{ ['--sc' as any]: status.c }}>
+          <span className="scdot" /><span className="sctail">{sel}</span><span className="scsep">·</span><span className="scstate">{status.l}</span>
+        </div> : null}
         <div className="loadmsg" id="loadmsg"><span className="spin" /><span id="loadtxt">Loading airframe…</span></div>
         <div className="badge">
           <HealthRing health={st.health ?? 0} grounded={st.grounded} />

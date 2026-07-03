@@ -37,8 +37,9 @@
     --cyan-3:rgba(53,224,208,.12);
     --red-3:rgba(255,91,106,.13);
 
-    --mono:ui-monospace,'Cascadia Code','JetBrains Mono',Consolas,monospace;
-    --sans:'Inter','Segoe UI',-apple-system,Roboto,'Helvetica Neue',sans-serif;
+    --mono:'JetBrains Mono Variable',ui-monospace,'Cascadia Code',Consolas,monospace;
+    --sans:'Manrope Variable','Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --display:'Sora Variable','Manrope Variable',system-ui,sans-serif;
     font-family:var(--sans);
   }
   *{box-sizing:border-box}
@@ -320,32 +321,36 @@
   @keyframes fade{from{opacity:0}to{opacity:1}}
   /* ============ LIGHT THEME (cream/white) — /light preview ============ */
   html.light{
-    --bg:#efece4;                 /* warm cream base */
-    --bg-2:#e5e1d7;
-    --ink:#1c2026;                /* near-black ink */
-    --ink-2:rgba(28,32,38,.66);
-    --ink-3:rgba(28,32,38,.44);
-    --ink-4:rgba(28,32,38,.26);
-    --line:rgba(28,32,38,.12);
-    --line-2:rgba(28,32,38,.06);
-    --panel:rgba(28,32,38,.03);
-    --glass:rgba(255,255,255,.55);       /* frosted WHITE over the cream base */
-    --glass-2:rgba(255,255,255,.74);
-    --glass-border:rgba(255,255,255,.9);
-    --glass-blur:blur(20px) saturate(135%);
-    --surface:rgba(255,255,255,.62);
-    --hi:inset 0 1px 0 rgba(255,255,255,.95);
-    --lo:inset 0 -1px 0 rgba(28,32,38,.05);
-    --shadow:0 1px 2px rgba(20,24,31,.05),0 10px 30px rgba(20,24,31,.08);
-    --shadow-lg:0 2px 8px rgba(20,24,31,.06),0 22px 55px rgba(20,24,31,.13);
-    --neu-out:-3px -3px 8px rgba(255,255,255,.9),4px 4px 12px rgba(28,32,38,.12);
-    --neu-in:inset 2px 2px 6px rgba(28,32,38,.1),inset -2px -2px 6px rgba(255,255,255,.9);
-    --cyan:#0fb5a6; --amber:#e0842a; --red:#e0455a;
-    --accent-2:rgba(224,132,42,.16); --accent-3:rgba(224,132,42,.08);
-    --cyan-3:rgba(15,181,166,.12); --red-3:rgba(224,69,90,.12);
+    /* premium cool glass — a near-white spatial base with a gradient-mesh atmosphere (app.css) */
+    --bg:#e9eef6;
+    --bg-2:#dee6f1;
+    --ink:#141826;                /* cool near-black */
+    --ink-2:rgba(20,24,38,.62);
+    --ink-3:rgba(20,24,38,.42);
+    --ink-4:rgba(20,24,38,.22);
+    --line:rgba(20,24,38,.08);
+    --line-2:rgba(20,24,38,.045);
+    --panel:rgba(255,255,255,.4);
+    /* acrylic glass: stronger blur + saturation, whiter fill, soft luminous border */
+    --glass:rgba(255,255,255,.46);
+    --glass-2:rgba(255,255,255,.66);
+    --glass-border:rgba(255,255,255,.85);
+    --glass-blur:blur(34px) saturate(190%);
+    --surface:rgba(255,255,255,.6);
+    --hi:inset 0 1px 0 rgba(255,255,255,.9);
+    --lo:inset 0 -1px 0 rgba(20,24,38,.03);
+    /* soft, wide elevation shadows (low opacity, cool tint) — floating spatial feel */
+    --shadow:0 2px 10px rgba(40,54,110,.05),0 16px 44px rgba(40,54,110,.10);
+    --shadow-lg:0 6px 20px rgba(40,54,110,.08),0 36px 84px rgba(40,54,110,.15);
+    --neu-out:-4px -4px 12px rgba(255,255,255,.85),5px 5px 16px rgba(40,54,110,.10);
+    --neu-in:inset 2px 2px 6px rgba(40,54,110,.09),inset -2px -2px 6px rgba(255,255,255,.9);
+    --accent:#5b63ff;             /* periwinkle neon — the one primary accent, used sparingly */
+    --accent-2:rgba(91,99,255,.15); --accent-3:rgba(91,99,255,.075);
+    --cyan:#12bda3; --amber:#f0983a; --red:#ff5f7a;   /* healthy mint · attention · grounded coral */
+    --cyan-3:rgba(18,189,163,.12); --red-3:rgba(255,95,122,.13);
   }
   html.light body{color:var(--ink)}
-  html.light #stage{background:radial-gradient(1300px 950px at 50% 40%,#ffffff 0%,#f0ece4 52%,#dcd6c9 100%)}
+  html.light #stage{background:radial-gradient(1300px 950px at 50% 40%,#f5f8fd 0%,#e7edf6 52%,#d5deec 100%)}
   /* tracks + hovers that were white-on-dark need to flip to ink-on-light */
   html.light .minibar,html.light .bandbar,html.light .fcard .hbar,
   html.light .fed .st .bar,html.light .scrub input[type=range]{background:rgba(28,32,38,.10)}

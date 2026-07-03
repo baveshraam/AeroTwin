@@ -149,6 +149,85 @@ html.light .stage-card { background: radial-gradient(1100px 800px at 50% 42%, #f
 .caption { font-size: 11px; color: var(--ink-3); margin-top: 12px; line-height: 1.55; }
 .caption b { color: var(--ink-2); font-weight: 600; }
 
+/* ============================================================================
+   PREMIUM REDESIGN — futuristic minimalist glass · gradient-mesh atmosphere ·
+   floating spatial layout · calm neon accents · smooth microinteractions.
+   ============================================================================ */
+body { font-family: var(--sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; letter-spacing: .1px; }
+
+/* restrained gradient-mesh atmosphere behind everything (fixed, blurred, low-sat) */
+body::before {
+  content: ""; position: fixed; inset: -25% -12% -10% -12%; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(46vw 42vw at 12% 4%, rgba(91,99,255,.18), transparent 60%),
+    radial-gradient(44vw 40vw at 92% 8%, rgba(18,189,163,.15), transparent 62%),
+    radial-gradient(52vw 46vw at 80% 96%, rgba(240,152,58,.10), transparent 60%),
+    radial-gradient(40vw 38vw at 6% 98%, rgba(255,95,122,.09), transparent 60%);
+  filter: blur(34px) saturate(112%);
+}
+
+/* typography — Sora display, Manrope body, mono data */
+.page-head h1 { font-family: var(--display); font-weight: 700; letter-spacing: -.6px; font-size: 30px; }
+.page-head .eyebrow { color: var(--accent); letter-spacing: 2.6px; }
+.page-head p { font-size: 14px; color: var(--ink-2); line-height: 1.65; }
+.nav .brand { font-family: var(--display); font-weight: 700; letter-spacing: -.2px; }
+.tail-hero .tl, .badge .tl { font-family: var(--display); letter-spacing: -.4px; }
+.card > h2 { letter-spacing: 1.4px; }
+
+/* nav — floating acrylic bar */
+.nav { height: 64px; border-bottom: 1px solid var(--line); }
+.navlinks a { border-radius: 11px; transition: color .2s cubic-bezier(.22,.61,.36,1), background .2s, box-shadow .2s; }
+.navlinks a.active { box-shadow: inset 0 0 0 1px var(--accent-2); }
+
+/* cards — acrylic, floating, soft elevation, gentle depth on hover */
+.card { border-radius: 20px; padding: 26px 26px 28px; box-shadow: var(--shadow), var(--hi);
+  transition: transform .28s cubic-bezier(.22,.61,.36,1), box-shadow .28s; }
+.card:hover { box-shadow: var(--shadow-lg), var(--hi); }
+.metric { border-radius: 18px; transition: transform .28s cubic-bezier(.22,.61,.36,1), box-shadow .28s; }
+.metric:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.fleet-grid .fcard { border-radius: 16px; transition: transform .24s cubic-bezier(.22,.61,.36,1), box-shadow .24s; }
+.fleet-grid .fcard:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+
+/* controls — glass pills, neon focus, natural easing */
+button.b, .viewbtns button { border-radius: 12px; transition: transform .18s cubic-bezier(.22,.61,.36,1), box-shadow .2s, color .2s, border-color .2s, background .2s; }
+button.b:hover:not(:disabled), .viewbtns button:hover { transform: translateY(-1px); }
+.askbar input:focus, .wctl select:focus { box-shadow: var(--neu-in), 0 0 0 3px var(--accent-3); border-color: var(--accent); }
+.suggest span { border-radius: 100px; transition: transform .16s cubic-bezier(.22,.61,.36,1), color .16s, border-color .16s; }
+
+/* keep HEALTH SEMANTICS on grade/slot/attention pills (the accent is now neutral periwinkle) */
+.g { border-color: var(--amber); color: var(--amber); background: transparent; }
+.g.major { background: rgba(240,152,58,.14); }
+.g.critical { background: var(--amber); color: #231400; border-color: var(--amber); }
+.g.beyond-limit { background: var(--red); color: #fff; border-color: var(--red); }
+.slot.q, .slot.now, .pill.hot, .badge2.hot { background: var(--amber); color: #231400; }
+.synthflag { color: var(--amber); border-color: rgba(240,152,58,.30); background: rgba(240,152,58,.10); }
+
+/* the 3D twin — a smaller, cooler, framed hero */
+.stage-card { height: 430px; border-radius: 22px; }
+
+/* ---- NEW: attention pointer over the aircraft (subtle sci-fi HUD) ---- */
+.hud-frame { position: absolute; inset: 16px; pointer-events: none; }
+.hud-frame::before, .hud-frame::after { content: ""; position: absolute; width: 30px; height: 30px; border: 1.5px solid var(--accent-2); }
+.hud-frame::before { top: 0; left: 0; border-right: 0; border-bottom: 0; border-radius: 9px 0 0 0; }
+.hud-frame::after { bottom: 0; right: 0; border-left: 0; border-top: 0; border-radius: 0 0 9px 0; }
+
+.statuschip {
+  position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 9px; padding: 9px 16px 9px 13px; border-radius: 100px;
+  background: var(--glass-2); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow), var(--hi), 0 0 0 4px color-mix(in srgb, var(--sc) 12%, transparent);
+  font-size: 12.5px; color: var(--ink);
+  animation: chipIn .5s cubic-bezier(.22,.61,.36,1) both;
+}
+.statuschip .scdot { width: 9px; height: 9px; border-radius: 50%; background: var(--sc); box-shadow: 0 0 0 4px color-mix(in srgb, var(--sc) 22%, transparent); }
+.statuschip.attn .scdot { animation: scpulse 1.8s ease-in-out infinite; }
+.statuschip .sctail { font-family: var(--mono); font-weight: 700; }
+.statuschip .scsep { color: var(--ink-4); }
+.statuschip .scstate { color: var(--sc); font-weight: 700; letter-spacing: .6px; text-transform: uppercase; font-size: 11px; font-family: var(--display); }
+@keyframes scpulse { 0%,100% { box-shadow: 0 0 0 4px color-mix(in srgb,var(--sc) 22%,transparent); } 50% { box-shadow: 0 0 0 9px color-mix(in srgb,var(--sc) 5%,transparent); } }
+@keyframes chipIn { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } to { opacity: 1; transform: translateX(-50%); } }
+
 /* ---------- responsive: never let the page scroll sideways ---------- */
 html, body { max-width: 100%; overflow-x: hidden; }
 .nav { overflow: hidden; }
