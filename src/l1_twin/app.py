@@ -1,12 +1,12 @@
-"""L1 — Digital-twin server: 3D twin UI + JSON API.
+"""L1 — Digital-twin server: serves the React app + the JSON API.
 
-Serves the interactive 3D twin (src/l1_twin/static/index.html, vendored Three.js, no
-build step, runs offline on the Pi) and a small JSON API that exposes exactly the twin
-state the Python already computes — nothing is faked in the browser, the frontend only
-draws what twin.py / planner.py decide.
+Serves the built React single-page app (frontend/dist, fonts + Three.js bundled, runs
+offline on the Pi) and a small JSON API that exposes exactly the twin state the Python
+already computes — nothing is faked in the browser, the frontend only draws what
+twin.py / planner.py decide.
 
-Run:  uvicorn src.l1_twin.app:app --port 8000   ->   http://127.0.0.1:8000
-      (the classic server-rendered view is still at /classic)
+Run:  cd frontend && npm run build           # once (or after a UI change)
+      uvicorn src.l1_twin.app:app --port 8000   ->   http://127.0.0.1:8000
 """
 from __future__ import annotations
 
