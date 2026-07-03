@@ -20,7 +20,7 @@ AeBAD (aero-engine blade, normal-only train / defective test) and MVTec AD.
 Run the self-check (synthetic normal vs. scratched patches, no downloads needed for the
 maths — backbone weights fetch once, then cached offline):
 
-    python -m src.l0_detect.anomaly
+    python -m backend.l0_detect.anomaly
 """
 from __future__ import annotations
 

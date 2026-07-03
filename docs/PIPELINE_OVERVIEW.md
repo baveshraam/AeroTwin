@@ -1,8 +1,8 @@
 # AeroTwin-Edge — Tech Stack & Pipeline, End to End
 
 One page, no fluff: what runs, in what order, on what data, with what tech. For the
-narrative pitch see [README.md](../README.md); for the project plan see
-[COURSE_OF_ACTION.md](../COURSE_OF_ACTION.md).
+narrative pitch see [README.md](../README.md); for the full project story see
+[COMPLETE_SUMMARY.md](../COMPLETE_SUMMARY.md).
 
 ## The chain in one line
 
@@ -37,7 +37,7 @@ explicitly-flagged *data sources* (SHM sensor stream, federated hangars), never 
 
 ## The L0 → L3 chain, with exact data shapes
 
-**L0 — Detect + Size + Grade** (`src/l0_detect/`)
+**L0 — Detect + Size + Grade** (`backend/l0_detect/`)
 ```
 image (jpg/png)
   → detect.py: YOLOv8-seg inference → [{defect_type, mask_length_px, confidence, model_version}]
@@ -48,7 +48,7 @@ image (jpg/png)
 `model_version` is stamped by *what actually ran* (`yolov8-seg` / `mock-v0` / `mock-fixed`),
 never inferred from the `--real` flag — a silent fallback must never claim to be real.
 
-**L1 — Twin state** (`src/l1_twin/twin.py`, `db.py`)
+**L1 — Twin state** (`backend/l1_twin/twin.py`, `db.py`)
 ```
 finding dict → db.add_finding() (SQLite, append-only history)
   → tail_state(): health 0-100, worst open defect, RUL (physics MC band + Bayesian learned band),
@@ -63,7 +63,7 @@ tail's growth rate → shm_health(): synthetic strain/AE/freq-shift stream → C
                 → fed back into twin.py as the Bayesian PRIOR for every tail's per-defect learning
 ```
 
-**L2 — Progression / RUL** (`src/l2_progress/`)
+**L2 — Progression / RUL** (`backend/l2_progress/`)
 ```
 (size_now, size_prev, cycles_between, limit_mm) → empirical_cycles_to_limit()   [if 2+ scans]
 (size_now, limit_mm)                            → paris_cycles_to_limit()      [deterministic]
@@ -81,7 +81,7 @@ fleet_summary() (every tail's twin state)
   → spares_forecast(): RUL-P10 → which repair kit, ordered by which cycle
 ```
 
-**L3 — Agent, copilot, work order, audit** (`src/l3_agent/`)
+**L3 — Agent, copilot, work order, audit** (`backend/l3_agent/`)
 ```
 finding + grade + progression
   → agent.draft_work_order(): retrieve manual excerpt (defect_type AND ata_zone match required)
@@ -93,10 +93,10 @@ finding + grade + progression
   → workorder.evidence_pdf(): hand-rolled PDF, stamped VERIFIED/BROKEN from a live re-walk
 ```
 
-**API + 3D UI** (`src/l1_twin/app.py`, `static/index.html`)
-19 routes (`/api/fleet`, `/api/tail/{t}`, `/api/scrub`, `/api/whatif`, `/api/shm/{tail}`,
-`/api/spares`, `/api/scenario/capacity`, `/api/workorder/*`, `/api/evidence.pdf`, `/api/ask`,
-`/api/federated`, `/api/telemetry`, …) — the frontend draws exactly what these return,
+**API + 3D UI** (`backend/l1_twin/app.py`, `frontend/`)
+21 routes (`/api/fleet`, `/api/ngafid/board`, `/api/ngafid/flight/{i}`, `/api/tail/{t}`,
+`/api/scrub`, `/api/whatif`, `/api/shm/{tail}`, `/api/spares`, `/api/scenario/capacity`,
+`/api/workorder/*`, `/api/evidence.pdf`, `/api/ask`, `/api/federated`, `/api/telemetry`, …) — the frontend draws exactly what these return,
 nothing is computed in JavaScript. The 3D scene is a parametric `LatheGeometry` fuselage
 (clickable ATA-zone hotspots via raycasting against the real mesh), health-tinted, with a
 time-scrub slider that calls `project_fleet()` live.
@@ -110,8 +110,18 @@ multi-site ITAR agreement for a POC), and the edge-telemetry HUD's fps/cpu numbe
 laptop. All three are flagged `synthetic`/`simulated` in the API response and the UI —
 never silently presented as live.
 
-## Current ML status (2026-07-03)
+## Current ML status (2026-07-04)
 
+- **NGAFID maintenance-need model (the prediction core)**: trained, real, deployed to
+  `/api/ngafid/*` — HistGradientBoosting on 70 per-flight engine-sensor aggregates
+  (mean/std/max of oil T/P, CHT1-4, EGT1-4, RPM, fuel flow, IAS, NormAc, …) from the
+  real NGAFID maintenance dataset (28,935 flights around labelled unscheduled-maintenance
+  events). Honest validation: splits grouped by maintenance event, and the two
+  target-derived header columns (`date_diff`, `number_flights_before`) are excluded as
+  leakage — with them the score is a fake 100%. Measured: **ROC-AUC 0.702**, balanced-acc
+  0.636; days-to-maintenance quantile band (P10/P50/P90) with **80% empirical coverage**
+  and P50 MAE 1.2 days. Explanations name sensors (z-score vs the post-maintenance
+  "healthy fleet" baseline × permutation importance). Retrain: `python -m ml.ngafid_train`.
 - **Base detector**: trained, real — YOLOv8s-seg, 40 epochs on 4,029-image public crack
   corpus (`crack-seg`), held-out box recall 0.667 / mask recall 0.427. Deployed to the
   `--real` inference path, verified genuinely discriminating (fires on a real crack photo,

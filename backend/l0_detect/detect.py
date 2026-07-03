@@ -4,9 +4,9 @@ Returns a list of detections with a pixel length for each defect mask. Two modes
 
 * mock=True (default until you train a model): returns a synthetic detection so the
   whole L0 -> L3 chain runs today. Great for wiring up the twin/agent/dashboard.
-* real: loads a trained YOLOv8-seg model from models/weights/crack-seg.pt and runs
+* real: loads a trained YOLOv8-seg model from ml/models/crack-seg.pt and runs
   segmentation. Cracks are thin and tiny, so for the real build use high-resolution
-  tiling (SAHI) and an anchor-free small-object detector — see tools/train.py.
+  tiling (SAHI) and an anchor-free small-object detector — see ml/train.py.
 
 The 'length' of a crack mask is estimated from the polygon's bounding diagonal as a
 simple, honest proxy. Upgrade to skeleton/medial-axis length for accuracy later.

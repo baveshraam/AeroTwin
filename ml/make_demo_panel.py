@@ -1,8 +1,8 @@
 """Generate a synthetic aircraft-skin panel with an ArUco marker + a crack.
 
 No camera needed. Produces an image you can run the real sizing path on:
-    python tools/make_demo_panel.py
-    python -m src.pipeline --image data/samples/panel_demo.png --real   # if a model exists
+    python ml/make_demo_panel.py
+    python -m backend.pipeline --image data/samples/panel_demo.png --real   # if a model exists
 
 The marker is 50 mm in the real world; the script prints how many px that is so you
 can sanity-check the mm/px scale the pipeline computes.

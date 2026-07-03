@@ -13,7 +13,7 @@ exactly where every rupee comes from. Calibrate per operator before quoting a sl
 """
 from __future__ import annotations
 
-from src.l1_twin.twin import CALENDAR_INTERVAL_CYCLES, fleet_summary
+from backend.l1_twin.twin import CALENDAR_INTERVAL_CYCLES, fleet_summary
 
 # --- ILLUSTRATIVE economics (calibrate per operator; one source of truth) ---------
 DOWNTIME_COST_PER_CHECK = 1_200_000   # Rs: ground time + labour for one scheduled structural check

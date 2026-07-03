@@ -6,7 +6,7 @@ already computes — nothing is faked in the browser, the frontend only draws wh
 twin.py / planner.py decide.
 
 Run:  cd frontend && npm run build           # once (or after a UI change)
-      uvicorn src.l1_twin.app:app --port 8000   ->   http://127.0.0.1:8000
+      uvicorn backend.l1_twin.app:app --port 8000   ->   http://127.0.0.1:8000
 """
 from __future__ import annotations
 
@@ -18,15 +18,15 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.gzip import GZipMiddleware
 
-from src.l0_detect.grade import grade_defect
-from src.l1_twin import db, federated, shm
-from src.l1_twin.planner import fleet_plan, scenario_add_capacity, scenario_defer, spares_forecast
-from src.l1_twin.twin import _growth_rate, fleet_summary, project_fleet
-from src.l2_progress.paris import project_growth
-from src.l3_agent import copilot, workorder
-from src.l3_agent.agent import draft_work_order
+from backend.l0_detect.grade import grade_defect
+from backend.l1_twin import db, federated, ngafid_risk, shm
+from backend.l1_twin.planner import fleet_plan, scenario_add_capacity, scenario_defer, spares_forecast
+from backend.l1_twin.twin import _growth_rate, fleet_summary, project_fleet
+from backend.l2_progress.paris import project_growth
+from backend.l3_agent import copilot, workorder
+from backend.l3_agent.agent import draft_work_order
 
-MODEL_ASSETS = Path(__file__).resolve().parents[2] / "Airplane-body"
+MODEL_ASSETS = Path(__file__).resolve().parents[2] / "frontend" / "public" / "model-assets"
 FRONTEND = Path(__file__).resolve().parents[2] / "frontend" / "dist"   # the built React app
 app = FastAPI(title="AeroTwin - Edge Digital Twin")
 # The airframe OBJ is ~12 MB of ASCII; gzip cuts it ~4-5x on the wire. Big win for the Pi's
@@ -188,7 +188,7 @@ def api_audit() -> dict:
     """The tamper-evident hash chain — every airworthiness decision, SHA-256 linked.
     Returns a compact view (hash, prev, tail, summary, citation) + the live verify status."""
     import json as _json
-    from src.l3_agent import audit
+    from backend.l3_agent import audit
     entries = []
     if audit.LOG.exists():
         for line in audit.LOG.read_text(encoding="utf-8").splitlines():
@@ -216,6 +216,19 @@ def api_federated() -> dict:
     return {"simulated": True,
             "synthetic_note": "simulated 4-hangar federation; FedAvg + DP math is real",
             **federated.simulate()}
+
+
+@app.get("/api/ngafid/board")
+def api_ngafid_board() -> dict:
+    """REAL-DATA fleet risk board: maintenance-need P() + RUL band per aircraft episode,
+    learned from NGAFID flight telemetry (28k flights, labelled maintenance events)."""
+    return ngafid_risk.board()
+
+
+@app.get("/api/ngafid/flight/{master_index}")
+def api_ngafid_flight(master_index: int) -> dict:
+    """One NGAFID flight: risk, RUL band, named-sensor explanation, and ground truth."""
+    return ngafid_risk.flight(master_index)
 
 
 @app.get("/api/telemetry")

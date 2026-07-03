@@ -10,22 +10,22 @@ One panel, one defect, one tail, fully offline. This is the 3-minute demo:
       -> AUDIT                       hash-chained, awaiting certifying-staff signature
 
 Usage:
-    python -m src.pipeline                 # one mock scan through the whole chain
-    python -m src.pipeline --seed          # seed a 2-scan growth story for the demo
-    python -m src.pipeline --image path.jpg --real   # use a trained YOLO model
+    python -m backend.pipeline                 # one mock scan through the whole chain
+    python -m backend.pipeline --seed          # seed a 2-scan growth story for the demo
+    python -m backend.pipeline --image path.jpg --real   # use a trained YOLO model
 """
 from __future__ import annotations
 
 import argparse
 
-from src.l0_detect.detect import detect_defects
-from src.l0_detect.grade import grade_defect
-from src.l0_detect.sizing import mm_per_pixel, measure_mm
-from src.l1_twin import db
-from src.l1_twin.twin import tail_state
-from src.l2_progress.paris import empirical_cycles_to_limit, paris_cycles_to_limit
-from src.l3_agent import audit
-from src.l3_agent.agent import draft_work_order
+from backend.l0_detect.detect import detect_defects
+from backend.l0_detect.grade import grade_defect
+from backend.l0_detect.sizing import mm_per_pixel, measure_mm
+from backend.l1_twin import db
+from backend.l1_twin.twin import tail_state
+from backend.l2_progress.paris import empirical_cycles_to_limit, paris_cycles_to_limit
+from backend.l3_agent import audit
+from backend.l3_agent.agent import draft_work_order
 
 DEFAULT_SCALE_MM_PER_PX = 0.025  # fallback when no ArUco marker is in the frame
 
@@ -76,7 +76,7 @@ def run_scan(
     anomaly = None
     if image_path and not mock:
         try:
-            from src.l0_detect.anomaly import PatchCore, BANK_PATH
+            from backend.l0_detect.anomaly import PatchCore, BANK_PATH
             if BANK_PATH.exists():
                 a = PatchCore.load().score(image_path)
                 anomaly = {"score": round(a["score"], 3), "is_anomaly": a["is_anomaly"]}
@@ -170,10 +170,10 @@ def seed_demo() -> None:
     # VT-AXE — beyond limit: 13.0 mm crack past the 12 mm SRM limit -> grounded.
     _seed_scan("VT-AXE", "crack", "53", "stringer 14", mask_px=520.0, cycles=12000, date="2026-07-01")
 
-    from src.l1_twin.planner import fleet_plan, print_plan
+    from backend.l1_twin.planner import fleet_plan, print_plan
     print()
     print_plan(fleet_plan())
-    print("\nDone. Start the dashboard:  uvicorn src.l1_twin.app:app --port 8000")
+    print("\nDone. Start the dashboard:  uvicorn backend.l1_twin.app:app --port 8000")
 
 
 def _seed_scan(tail: str, defect: str, ata: str, location: str,

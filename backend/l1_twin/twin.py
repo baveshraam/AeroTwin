@@ -20,10 +20,10 @@ No I/O of its own beyond db reads, so the math is trivial to test (see __main__)
 """
 from __future__ import annotations
 
-from src.l0_detect.grade import grade_defect
-from src.l1_twin import db
-from src.l2_progress.paris import paris_rul_mc
-from src.l2_progress import bayes
+from backend.l0_detect.grade import grade_defect
+from backend.l1_twin import db
+from backend.l2_progress.paris import paris_rul_mc
+from backend.l2_progress import bayes
 
 
 # Federated global growth prior, computed once and reused as the Bayesian PRIOR for every
@@ -36,7 +36,7 @@ def _growth_prior() -> tuple[float, float]:
     global _PRIOR
     if _PRIOR is None:
         try:
-            from src.l1_twin import federated
+            from backend.l1_twin import federated
             sim = federated.simulate()
             _PRIOR = (float(sim["global_mean"]), float(sim.get("global_spread") or 0.25))
         except Exception:

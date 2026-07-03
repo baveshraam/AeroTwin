@@ -9,9 +9,9 @@ be pulled automatically vs. what needs a (free) account. Three ML branches are f
                                       replacing the illustrative constants (the PREDICT step)
 
 Usage:
-    python tools/fetch_datasets.py --list          # the ranked registry + how to get each
-    python tools/fetch_datasets.py --all-auto       # pull everything that needs no login
-    python tools/fetch_datasets.py crack-seg        # pull one by key
+    python ml/fetch_datasets.py --list          # the ranked registry + how to get each
+    python ml/fetch_datasets.py --all-auto       # pull everything that needs no login
+    python ml/fetch_datasets.py crack-seg        # pull one by key
 
 `auto`/`url` pulls need nothing (ultralytics or a direct public zip). Kaggle sets need
 `pip install kaggle` + ~/.kaggle/kaggle.json. Roboflow sets need `pip install roboflow`
@@ -101,7 +101,7 @@ REGISTRY: dict[str, dict] = {
              "- POC/research only). Validates the autoencoder/PatchCore pipeline.",
     ),
     # --- FATIGUE / RUL: real growth data to CALIBRATE the twin's Paris-law Monte-Carlo,
-    #     replacing the illustrative constants in src/l1_twin & src/l2_progress ---
+    #     replacing the illustrative constants in backend/l1_twin & backend/l2_progress ---
     "virkler": dict(
         branch="FATIGUE", method="manual", tier=1,
         url="https://rdrr.io/cran/HMMRel/man/Virkler25.html",
@@ -113,7 +113,7 @@ REGISTRY: dict[str, dict] = {
         branch="FATIGUE", method="url", tier=1,
         url="https://phm-datasets.s3.amazonaws.com/NASA/18.+Fatigue+Crack+Growth+in+Aluminum+Lap+Joint.zip",
         note="NASA PCoE #18: fatigue crack growth on Al lap-joints w/ Lamb-wave signals "
-             "(T1-T8). Grounds the between-inspection SHM branch (src/l1_twin/shm.py).",
+             "(T1-T8). Grounds the between-inspection SHM branch (backend/l1_twin/shm.py).",
     ),
     "cmapss": dict(
         branch="FATIGUE", method="url", tier=2,
@@ -126,7 +126,7 @@ REGISTRY: dict[str, dict] = {
 
 def _configure_datasets_dir() -> None:
     """Point ultralytics' persisted datasets_dir at data/datasets (same fix as
-    tools/train.py's _configure_dirs) -- otherwise `auto` downloads land wherever
+    ml/train.py's _configure_dirs) -- otherwise `auto` downloads land wherever
     ultralytics' own settings.json last pointed (its own default, or a stale value),
     not the data/datasets/<key> layout the rest of this script assumes."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -321,7 +321,7 @@ def merge_aircraft() -> None:
         print()
         validate(str(data_yaml))
     except Exception as e:
-        print(f"(validation skipped: {e}; run `python tools/validate_dataset.py "
+        print(f"(validation skipped: {e}; run `python ml/validate_dataset.py "
               f"{data_yaml}` by hand)")
 
 
@@ -344,7 +344,7 @@ def main() -> None:
             gate = {"auto": "no login", "url": "no login", "kaggle": "kaggle token",
                     "roboflow": "roboflow key", "manual": "account/consent"}[d["method"]]
             print(f"  {k:28} [{d['branch']:8} t{d['tier']} | {gate:16}] {d['note'].splitlines()[0]}")
-        print("\n  fetch:  python tools/fetch_datasets.py <key> [<key> ...]  |  --all-auto")
+        print("\n  fetch:  python ml/fetch_datasets.py <key> [<key> ...]  |  --all-auto")
         return
 
     keys = [k for k, d in REGISTRY.items() if d["method"] in ("auto", "url")] if args.all_auto else args.keys

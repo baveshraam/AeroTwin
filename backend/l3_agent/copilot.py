@@ -25,9 +25,9 @@ import os
 import re
 import urllib.request
 
-from src.l0_detect.grade import grade_defect
-from src.l2_progress.paris import paris_rul_mc
-from src.l3_agent.agent import draft_work_order
+from backend.l0_detect.grade import grade_defect
+from backend.l2_progress.paris import paris_rul_mc
+from backend.l3_agent.agent import draft_work_order
 
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:3b")
@@ -44,13 +44,13 @@ def _get_rul(size_mm: float, limit_mm: float) -> dict:
 
 
 def _get_tail_state(tail: str) -> dict:
-    from src.l1_twin.twin import fleet_summary  # lazy: avoids import cycle at module load
+    from backend.l1_twin.twin import fleet_summary  # lazy: avoids import cycle at module load
     s = next((s for s in fleet_summary() if s["tail"] == tail), None)
     return s or {"error": f"no such tail {tail}"}
 
 
 def _get_fleet_summary() -> dict:
-    from src.l1_twin.twin import fleet_summary  # lazy: avoids import cycle at module load
+    from backend.l1_twin.twin import fleet_summary  # lazy: avoids import cycle at module load
     s = fleet_summary()
     return {"tails": len(s),
             "grounded": [x["tail"] for x in s if x.get("grounded")],

@@ -6,7 +6,7 @@ venv/
 env/
 
 # Models / weights (download or train; don't commit big binaries)
-models/weights/
+ml/models/
 *.pt
 *.onnx
 *.engine
@@ -20,9 +20,10 @@ data/runs/
 data/raw/
 
 # Downloaded/regenerable ML datasets + training run artifacts — re-fetch with
-# tools/fetch_datasets.py / regenerate with tools/train.py instead of pushing
+# ml/fetch_datasets.py / regenerate with ml/train.py instead of pushing
 data/datasets/
 runs/
+ml/runs/
 # ultralytics' own datasets_dir setting only takes effect from the NEXT process
 # (it's cached at import time) -- a stray top-level datasets/ can appear on a
 # fresh clone's first fetch/train invocation before that setting "sticks".
@@ -45,3 +46,6 @@ roboflow-key-1
 roboflow-publishable-api-key
 *api-key*
 *.key
+
+# NGAFID dataset (5.6GB — fetch from zenodo.org/records/6624956, never commit)
+data/ngafid/

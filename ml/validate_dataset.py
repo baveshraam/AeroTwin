@@ -9,8 +9,8 @@ Checks, per split (train/val/test) declared in a data.yaml:
   - per-class instance counts, so a collapsed/empty class jumps out immediately
 
 Usage:
-    python tools/validate_dataset.py datasets/crack-seg/crack-seg.yaml
-    python tools/validate_dataset.py data/datasets/aircraft/data.yaml
+    python ml/validate_dataset.py datasets/crack-seg/crack-seg.yaml
+    python ml/validate_dataset.py data/datasets/aircraft/data.yaml
 """
 from __future__ import annotations
 

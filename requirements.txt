@@ -16,3 +16,6 @@ scikit-learn>=1.3
 # Local LLM is optional for the first demo. Install Ollama separately
 # (https://ollama.com) and run `ollama pull phi3` when you wire up real RAG.
 # The current agent works with a template + keyword retrieval, no LLM needed.
+pandas>=2.0                    # NGAFID master index + feature tables
+pyarrow>=14                    # NGAFID parquet shards
+joblib>=1.3                    # model artifact serialization

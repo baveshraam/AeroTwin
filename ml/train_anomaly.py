@@ -27,8 +27,8 @@ Method (matches the PatchCore paper, with two ponytail simplifications noted bel
      in faiss + the reweighting if bank size or latency ever matters.
 
 Usage:
-    python tools/train_anomaly.py --data data/datasets/mvtec-ad/bottle          # build + evaluate
-    python tools/train_anomaly.py --data data/datasets/mvtec-ad/bottle --bank models/weights/anomaly-bottle.npz --skip-build
+    python ml/train_anomaly.py --data data/datasets/mvtec-ad/bottle          # build + evaluate
+    python ml/train_anomaly.py --data data/datasets/mvtec-ad/bottle --bank ml/models/anomaly-bottle.npz --skip-build
 """
 from __future__ import annotations
 

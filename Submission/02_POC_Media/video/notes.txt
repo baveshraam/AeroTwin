@@ -1,4 +1,0 @@
-video/ — aerotwin_poc_2min.mp4 (main, per ../VIDEO_SCRIPT.txt),
-detection_only_30s.mp4 (silent real detection close-up),
-pi_device_broll_20s.mp4 (Pi 5 + camera, airplane mode). Record with OBS; cut in
-DaVinci Resolve / CapCut. Keep a clean backup take on disk.

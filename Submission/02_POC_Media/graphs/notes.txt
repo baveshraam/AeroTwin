@@ -1,4 +1,0 @@
-graphs/ — matplotlib charts; LABEL each PROJECTED vs MEASURED.
-01_pod_curve (preliminary, MIL-HDBK-1823A methodology), 02_paris_growth,
-03_fps_latency (mark CPU measured vs Hailo target), 04_interval_lever (a_d 4mm vs 2mm).
-See ../MEDIA_CHECKLIST.txt.

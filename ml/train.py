@@ -8,11 +8,11 @@ Two-stage transfer, because aircraft-skin labels are scarce (that's the whole pr
                    (Aircraft_Fuselage_DET2023 / Roboflow aircraft skin) so it
                    transfers to fuselage skin, rivets, lap joints, corrosion.
 
-Get the data first:   python tools/fetch_datasets.py --list
+Get the data first:   python ml/fetch_datasets.py --list
 Then:
-    python tools/train.py --stage base                       # 1) train the base
-    python tools/train.py --stage adapt --data data/datasets/aircraft/data.yaml
-    python tools/train.py --export                            # 3) INT8 ONNX for the Pi
+    python ml/train.py --stage base                       # 1) train the base
+    python ml/train.py --stage adapt --data data/datasets/aircraft/data.yaml
+    python ml/train.py --export                            # 3) INT8 ONNX for the Pi
 
 Cracks are thin and tiny: high imgsz (1280) + SAHI tiling at inference so a small
 crack isn't lost in a downscaled frame. We report POD (probability of detection) and
@@ -99,7 +99,7 @@ def deploy_base() -> None:
     if not BASE_WEIGHTS.exists():
         raise SystemExit(f"No {BASE_WEIGHTS} yet — run `--stage base` first.")
     _promote(BASE_WEIGHTS, DEPLOY_WEIGHTS)
-    print(f"{DEPLOY_WEIGHTS.name} is now the base crack detector — `python -m src.pipeline "
+    print(f"{DEPLOY_WEIGHTS.name} is now the base crack detector — `python -m backend.pipeline "
           f"--image <panel.jpg> --real` will use it.")
 
 
