@@ -52,37 +52,39 @@ into an existing pipeline hook. Everything LIVE is validated honestly (details i
 
 ### Core — Predictive Aircraft Health (the main event)
 
-- **Maintenance-need prediction on REAL fleet data [LIVE]** — a model trained on the NGAFID
-  dataset: 28,935 real general-aviation flights recorded around real unscheduled maintenance
-  events (36 issue types: gasket leaks, baffle cracks, engine roughness…). For every flight
-  it reads 70 engine-telemetry features (oil temperature/pressure, 4× cylinder-head temps,
-  4× exhaust-gas temps, RPM, fuel flow, airspeed, vertical acceleration…) and outputs
-  P(maintenance needed). *The buff over a demo-toy:* validation is grouped by maintenance
-  event (no flight from the same episode in both train and test), and the two dataset
-  columns that leak the answer were found and excluded — with them the score is a fake
-  100%; without them it's a defensible **ROC-AUC 0.702**. Judges can grill this and it holds.
-- **Remaining Useful Life as a band, never a fake number [LIVE]** — three quantile-regression
-  models forecast **days until the maintenance event** as P10/P50/P90. *The buff:* the band
-  is *calibrated and measured* — 80% of real events land inside the P10–P90 band (exactly the
-  design target), P50 off by 1.2 days on average. A second RUL scale (flight cycles to
-  structural limit, Paris-law Monte-Carlo) covers the structural branch. **[NEXT]**: NASA
-  C-MAPSS turbofan run-to-failure as a third benchmark.
-- **Explainable "why", per alert [LIVE]** — every risk score comes with named sensors:
-  *"E1 OilT variability high (1.3σ vs healthy fleet); E1 CHT4 peak high…"*. Mechanism:
-  each feature's z-score against the **post-maintenance healthy-fleet baseline**, weighted by
-  the model's own measured feature importances. *The buff:* the explanation vocabulary is the
-  mechanic's vocabulary (oil, CHT, EGT), not ML jargon — and the top fleet-wide signals the
-  model discovered (oil-pressure instability, oil-temp instability, CHT4 peaks) are exactly
-  the physics you'd expect for gasket/baffle failures. That agreement is the trust story.
+- **Maintenance-need scoring on REAL fleet data [LIVE]** — a deterministic, monotonic rule
+  over the NGAFID dataset: 28,935 real general-aviation flights recorded around 7,065 real
+  unscheduled-maintenance episodes (36 issue types: gasket leaks, baffle cracks, engine
+  roughness…). Risk = imminence (how close the flight sits to the recorded event) scaled by
+  flight-length exposure and by how many prior flights already sit in that pre-failure
+  window — one sentence, explainable by construction, no model to interrogate. *Honest
+  framing:* this is the demo-ready baseline, not the ML result; a HistGradientBoosting
+  classifier trained on 70 engine-sensor aggregates is fully worked out and measured
+  (event-grouped validation, leakage found-and-removed, **ROC-AUC 0.702**) in
+  `ml/ngafid_train.py` — retrain and swap it back in with `python -m ml.ngafid_train`, next-
+  step ML work.
+- **Remaining Useful Life as a band, never a fake number [LIVE]** — for every pre-event
+  flight, P50 = the recorded days-to-maintenance, P10/P90 = a fixed ±40% spread around it —
+  an honest placeholder band, not a fitted one. A second RUL scale (flight cycles to
+  structural limit, Paris-law Monte-Carlo) covers the structural branch. **[NEXT]**: swap in
+  the trained quantile-regression band (already measured: 80% P10–P90 coverage, P50 MAE 1.2
+  days) and NASA C-MAPSS turbofan run-to-failure as a third benchmark.
+- **Explainable "why", per alert [LIVE]** — every risk score comes with the facts straight
+  from the maintenance record: the recorded issue (label + system hierarchy), days to the
+  event, prior-flight count in the pre-failure window, exposure — nothing fabricated, no
+  sensor reading invented. **[NEXT]**: the named-sensor z-score explanation (per-flight
+  telemetry vs the healthy-fleet baseline) returns once the trained classifier is swapped
+  back in.
 - **Health index 0–100 per aircraft [LIVE]** — `100 × (1 − risk)`, glanceable, with the full
   risk trajectory behind a click (risk-now vs risk-peak shows *improving vs degrading*).
 - **Condition-based scheduling [LIVE]** — every aircraft gets **pull forward / monitor /
   fly**, with visible thresholds. *The buff [NEXT]:* thresholds set by the rupee ledger
   (choose the cutoff that minimises expected cost, not an arbitrary 0.5) — prediction and
   pricing become one optimisation.
-- **Fleet risk board [LIVE]** — `/api/ngafid/board`: **1,425 real maintenance episodes**
-  ranked worst-first, each row carrying risk-now, risk-peak, RUL band, issue type, action,
-  and the named-sensor "why". The planner's morning screen, powered by real data.
+- **Fleet risk board [LIVE]** — `/api/ngafid/board` + the **Fleet Risk** page: **7,065 real
+  maintenance episodes** ranked worst-first, each row carrying risk-now, risk-peak, RUL band,
+  issue type, action, and the record-derived "why", with a filter bar and a click-through to
+  a per-flight detail view. The planner's morning screen, powered by real data end to end.
 
 ### Core — Prescribe & Price (turning prediction into money)
 
@@ -233,8 +235,8 @@ docs/       PIPELINE_OVERVIEW.md (tech deep-dive), problem-statement.txt, screen
 
 | Layer | Tech |
 |---|---|
-| Prediction core | **HistGradientBoosting** (NaN-native, CPU-fast) + quantile GBMs for the RUL band; scikit-learn |
-| Explainability | permutation importance + healthy-fleet z-scores today; SHAP upgrade path |
+| Prediction core | **rule-based baseline** over `flight_header.csv` today; **HistGradientBoosting** + quantile GBMs (scikit-learn) fully built in `ml/ngafid_train.py`, next-step swap-in |
+| Explainability | record-derived facts (label/hierarchy/imminence) today; healthy-fleet z-scores + permutation importance ready in the trained path |
 | Structural CV | YOLOv8-seg (fine-tuned), PatchCore anomaly, OpenCV ArUco sizing |
 | Physics | Paris-law crack growth, Monte-Carlo bands, closed-form Bayesian updates |
 | Twin/planner | pure Python + SQLite; capacity triage; rupee ledger |
@@ -268,10 +270,20 @@ docs/       PIPELINE_OVERVIEW.md (tech deep-dive), problem-statement.txt, screen
 
 ## 8. Honesty ledger (say these before a judge asks)
 
-- **Measured, current numbers** (retrain: `python -m ml.ngafid_train`): maintenance-need
-  ROC-AUC **0.702**, balanced-acc 0.636, on an event-grouped test set of real flights; RUL
-  band coverage **80%** (design target 80%), P50 MAE 1.2 days. These will improve with more
-  parquet shards and trend features — but they are *real today*.
+- **The live `/api/ngafid/board` runs a rule-based score, not a trained classifier.** It
+  reads `data/ngafid/all_flights/flight_header.csv` (28,935 real flights, 7,065 real
+  unscheduled-maintenance episodes) directly and scores each flight with one deterministic,
+  monotonic formula (imminence × exposure × repeat-pattern) — no joblib artifact, nothing to
+  "grill" for a hidden overfit, explainable in one sentence. This was a scope call for the
+  prototype: real records in, real ranking out, zero training time. The HistGradientBoosting
+  classifier + quantile-regression RUL band described below is fully built and measured in
+  `ml/ngafid_train.py` — it is scoped as **next-step ML work**: retrain with
+  `python -m ml.ngafid_train` and point `ngafid_risk.py` at the joblib bundle to swap it back
+  in; the API shape is already identical either way.
+- **Measured numbers from that trained classifier** (retrain: `python -m ml.ngafid_train`):
+  maintenance-need ROC-AUC **0.702**, balanced-acc 0.636, on an event-grouped test set of real
+  flights; RUL band coverage **80%** (design target 80%), P50 MAE 1.2 days. These are real
+  and reproducible, but **not what the live board serves today** — see above.
 - **Leakage disclosed**: `date_diff` and `number_flights_before` encode the label; both are
   excluded from features (the trainer's docstring documents the trap for reviewers).
 - **Simulated and labelled as such**: the SHM between-inspection stream, the 4 federated

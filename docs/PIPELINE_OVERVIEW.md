@@ -112,16 +112,18 @@ never silently presented as live.
 
 ## Current ML status (2026-07-04)
 
-- **NGAFID maintenance-need model (the prediction core)**: trained, real, deployed to
-  `/api/ngafid/*` — HistGradientBoosting on 70 per-flight engine-sensor aggregates
-  (mean/std/max of oil T/P, CHT1-4, EGT1-4, RPM, fuel flow, IAS, NormAc, …) from the
-  real NGAFID maintenance dataset (28,935 flights around labelled unscheduled-maintenance
-  events). Honest validation: splits grouped by maintenance event, and the two
-  target-derived header columns (`date_diff`, `number_flights_before`) are excluded as
-  leakage — with them the score is a fake 100%. Measured: **ROC-AUC 0.702**, balanced-acc
-  0.636; days-to-maintenance quantile band (P10/P50/P90) with **80% empirical coverage**
-  and P50 MAE 1.2 days. Explanations name sensors (z-score vs the post-maintenance
-  "healthy fleet" baseline × permutation importance). Retrain: `python -m ml.ngafid_train`.
+- **NGAFID maintenance-need score (the prediction core)**: `/api/ngafid/*` currently serves
+  a **rule-based baseline** (`backend/l1_twin/ngafid_risk.py`) straight off
+  `flight_header.csv` — deterministic, monotonic, explainable in one sentence, zero training
+  time. The trained alternative is fully built and measured: HistGradientBoosting on 70
+  per-flight engine-sensor aggregates (mean/std/max of oil T/P, CHT1-4, EGT1-4, RPM, fuel
+  flow, IAS, NormAc, …) from the real NGAFID maintenance dataset (28,935 flights around
+  labelled unscheduled-maintenance events), splits grouped by maintenance event, the two
+  target-derived header columns (`date_diff`, `number_flights_before`) excluded as leakage.
+  Measured: **ROC-AUC 0.702**, balanced-acc 0.636; days-to-maintenance quantile band
+  (P10/P50/P90) with **80% empirical coverage** and P50 MAE 1.2 days; explanations name
+  sensors (z-score vs the post-maintenance "healthy fleet" baseline × permutation
+  importance). Retrain and swap back in: `python -m ml.ngafid_train`.
 - **Base detector**: trained, real — YOLOv8s-seg, 40 epochs on 4,029-image public crack
   corpus (`crack-seg`), held-out box recall 0.667 / mask recall 0.427. Deployed to the
   `--real` inference path, verified genuinely discriminating (fires on a real crack photo,
