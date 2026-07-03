@@ -215,9 +215,7 @@ export default forwardRef<SceneHandle, { onDefectClick?: (i: number) => void }>(
     function resize() {
       const w = stage.clientWidth, h = stage.clientHeight
       renderer.setSize(w, h, false); camera.aspect = w / h
-      const occX = w > 940 ? 200 : 0
-      const occY = h > 620 ? Math.round(h * 0.25) : 0
-      camera.setViewOffset(w, h, occX, occY, w, h)
+      if (camera.clearViewOffset) camera.clearViewOffset()   // jet now sits in its own card — centre it
       camera.updateProjectionMatrix()
     }
     window.addEventListener('resize', resize); resize()

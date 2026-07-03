@@ -1,0 +1,119 @@
+/* ============================================================================
+   Multi-page shell layout — spacious, scrollable. Sits ON TOP of index.css
+   (which supplies the theme vars + all the component visual styles).
+   ============================================================================ */
+
+/* let the document scroll again (index.css locked it to a single 100vh screen) */
+html, body { height: auto; overflow: visible; }
+body { min-height: 100vh; }
+#root { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ---------- top navigation ---------- */
+.nav {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 26px; padding: 0 32px; height: 62px;
+  background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border); box-shadow: var(--hi);
+}
+.nav .brand { font-size: 17px; font-weight: 700; letter-spacing: .2px; display: flex; align-items: center; gap: 10px; }
+.nav .brand .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-3); animation: pulse 2.8s ease-in-out infinite; }
+.nav .brand s { color: var(--ink-4); text-decoration: none; font-weight: 500; }
+.navlinks { display: flex; gap: 4px; }
+.navlinks a {
+  font-size: 12.5px; font-weight: 600; letter-spacing: .2px; color: var(--ink-3);
+  text-decoration: none; padding: 8px 14px; border-radius: 10px; transition: .16s; white-space: nowrap;
+}
+.navlinks a:hover { color: var(--ink); background: rgba(127,127,127,.08); }
+.navlinks a.active { color: var(--accent); background: var(--accent-3); }
+.nav .hud { display: flex; gap: 18px; margin-left: auto; }
+.nav .hud .chip { font-size: 9px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 1px; text-align: right; }
+.nav .hud .chip b { display: block; color: var(--ink); font-size: 13px; letter-spacing: 0; font-family: var(--mono); margin-top: 3px; font-weight: 600; }
+.nav .hud .chip.live b { color: var(--accent); }
+
+/* ---------- page container ---------- */
+.container { width: 100%; max-width: 1300px; margin: 0 auto; padding: 34px 32px 64px; }
+.page { display: flex; flex-direction: column; gap: 30px; }
+.page-head h1 { font-size: 26px; font-weight: 700; letter-spacing: -.3px; margin: 0 0 6px; }
+.page-head p { font-size: 13.5px; color: var(--ink-3); margin: 0; max-width: 720px; line-height: 1.6; }
+.page-head .eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+
+/* ---------- cards + grids ---------- */
+.card {
+  background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border); border-radius: 16px; padding: 24px 24px 26px;
+  box-shadow: var(--shadow), var(--hi);
+}
+.card > h2 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.7px; color: var(--ink-3);
+  margin: 0 0 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.card > h2 .tt { color: var(--accent); font-family: var(--mono); letter-spacing: 0; text-transform: none; font-weight: 600; }
+.card > h2::after { content: ""; flex: 1; height: 1px; background: var(--line-2); }
+.grid { display: grid; gap: 22px; }
+.grid.c2 { grid-template-columns: repeat(2, 1fr); }
+.grid.c3 { grid-template-columns: repeat(3, 1fr); }
+.grid.c4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1080px) { .grid.c3, .grid.c4 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 720px) { .grid.c2, .grid.c3, .grid.c4 { grid-template-columns: 1fr; } }
+
+/* ---------- metric tiles ---------- */
+.metric { background: var(--glass-2); border: 1px solid var(--glass-border); border-radius: 14px; padding: 20px 22px; box-shadow: var(--lo); }
+.metric .v { font-size: 30px; font-family: var(--mono); font-weight: 700; line-height: 1; letter-spacing: -1px; }
+.metric .v.accent { color: var(--accent); }
+.metric .k { font-size: 11.5px; color: var(--ink-3); margin-top: 9px; line-height: 1.4; }
+
+/* ---------- the 3D twin, now a contained hero card ---------- */
+.stage-card { position: relative; height: 560px; border-radius: 18px; overflow: hidden;
+  border: 1px solid var(--glass-border); box-shadow: var(--shadow-lg), var(--hi);
+  background: radial-gradient(1100px 800px at 50% 42%, #163842 0%, #0c1926 46%, #05080d 100%); }
+html.light .stage-card { background: radial-gradient(1100px 800px at 50% 42%, #ffffff 0%, #f0ece4 52%, #dcd6c9 100%); }
+.stage-card #canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+
+/* overlays repositioned for the card context (override index.css fixed coords) */
+.stage-card .badge { position: absolute; top: 20px; left: 20px; bottom: auto; right: auto; }
+.stage-card .legend { position: absolute; left: 20px; bottom: 20px; top: auto; right: auto; }
+.stage-card .viewbtns { position: absolute; right: 20px; top: 20px; left: auto; bottom: auto; }
+.stage-card .hint { position: absolute; left: 50%; bottom: 16px; top: auto; transform: translateX(-50%); }
+.stage-card .loadmsg { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); }
+
+/* scrub is now a normal card element below the stage */
+.scrub.inline { position: static; width: 100%; }
+
+/* fleet strip -> responsive grid of cards */
+.fleet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.fleet-grid .fcard { position: relative; min-width: 0; border: 1px solid var(--glass-border); border-radius: 13px;
+  background: var(--glass-2); box-shadow: var(--lo); }
+
+/* tail picker chips (Aircraft Health page) */
+.tailchips { display: flex; gap: 8px; flex-wrap: wrap; }
+.tailchips button { font-size: 12px; font-weight: 600; color: var(--ink-2); background: var(--glass-2);
+  border: 1px solid var(--glass-border); border-radius: 20px; padding: 8px 15px; cursor: pointer; transition: .15s; box-shadow: var(--lo); }
+.tailchips button:hover { border-color: var(--accent); color: var(--accent); }
+.tailchips button.on { background: var(--accent); color: #0a0d12; border-color: var(--accent); }
+
+/* big per-tail hero badge on the Aircraft page */
+.tail-hero { display: flex; gap: 26px; align-items: center; flex-wrap: wrap; }
+.tail-hero .ring { width: 92px; height: 92px; }
+.tail-hero .ring svg { width: 92px; height: 92px; }
+.tail-hero .ring .rv b { font-size: 28px; }
+.tail-hero .tl { font-size: 30px; font-weight: 700; }
+.tail-hero .sub { font-size: 13px; color: var(--ink-3); margin-top: 5px; font-family: var(--mono); }
+.tail-hero .act { font-size: 13.5px; color: var(--ink-2); margin-top: 12px; line-height: 1.55; max-width: 560px; }
+.tail-hero .act .pill { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: .7px; padding: 3px 9px; border-radius: 5px; margin-bottom: 8px; text-transform: uppercase; }
+
+/* make the extra-feature (structural) page read as secondary */
+.badge-extra { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+  color: var(--ink-3); border: 1px solid var(--line); padding: 3px 9px; border-radius: 6px; margin-left: 10px; }
+
+.muted { color: var(--ink-3); font-size: 12px; }
+.sec { margin: 0; }
+
+/* ---------- responsive: never let the page scroll sideways ---------- */
+html, body { max-width: 100%; overflow-x: hidden; }
+.nav { overflow: hidden; }
+.navlinks { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.navlinks::-webkit-scrollbar { display: none; }
+@media (max-width: 900px) {
+  .nav { gap: 14px; padding: 0 18px; }
+  .nav .hud { display: none; }
+  .container { padding: 26px 18px 56px; }
+  .page-head h1 { font-size: 23px; }
+}
