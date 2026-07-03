@@ -92,9 +92,12 @@ it calls the real twin tools, not an LLM — so say that plainly; the footer alr
 ## Honesty notes for Q&A (say these before a judge asks)
 Full spoken-out-loud paragraphs per source are in **[honesty-qa.md](honesty-qa.md)** — skim
 those before presenting. The short version:
-- The detector is currently **mock-v0** (real crack detector mid-training). The twin math,
-  pricing, and audit are real; the *findings feeding them* are seeded until the model lands.
-  The header shows a "SYNTHETIC DATA · mock-v0" badge, so it's already stated on screen.
+- The detector is currently **mock-v0** in the seeded demo (the base crack model has
+  finished training — 67% box / 43% mask recall on held-out val — but isn't deployed to
+  the live `--real` path yet, and the seeded 4-tail story always uses fixed mock
+  detections for reproducibility regardless). The twin math, pricing, and audit are real;
+  the *findings feeding them* are seeded. The header shows a "SYNTHETIC DATA · mock-v0"
+  badge, so it's already stated on screen.
 - The edge telemetry HUD (fps/latency/temp/power) is **simulated on the laptop** (the `*`
   next to FPS) — real psutil values come from the Pi when deployed.
 - **SHM** panel is tagged "SYNTHETIC STREAM", **Federated** panel is tagged "SIMULATED" — in

@@ -115,7 +115,8 @@ src/
 data/
   srm_limits.csv · manuals/srm_53-30.md (controlled corpus, ILLUSTRATIVE)
 tools/
-  fetch_datasets.py (real dataset registry) · train.py (2-stage YOLOv8-seg → INT8 ONNX)
+  fetch_datasets.py (real dataset registry + Roboflow download/merge) · validate_dataset.py
+  train.py (2-stage YOLOv8-seg → INT8 ONNX) · train_anomaly.py (PatchCore AUROC validator)
   vendor_three.py (offline Three.js) · make_demo_panel.py · render_dashboard.py
 docs/
   PLAN.md · task-board.md · deck-outline.md

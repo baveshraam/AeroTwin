@@ -196,7 +196,9 @@ def fetch(key: str) -> None:
             return
         workspace, project_slug = d["url"].rstrip("/").split("roboflow.com/", 1)[1].split("/")[:2]
         raw = AIRCRAFT_DIR / "_raw" / key
-        raw.mkdir(parents=True, exist_ok=True)
+        raw.parent.mkdir(parents=True, exist_ok=True)
+        import shutil as _sh
+        _sh.rmtree(raw, ignore_errors=True)  # roboflow skips extraction if the dir already exists
         try:
             project = Roboflow(api_key=api).workspace(workspace).project(project_slug)
             versions = project.versions()
@@ -210,6 +212,20 @@ def fetch(key: str) -> None:
 
     # manual
     print(f"  -> download: {d['url']}\n     unzip into: {dest}")
+
+
+def _seg_line(parts: list[str]) -> str:
+    """Normalize one YOLO label line to a polygon (segmentation) line so a `-seg` model
+    can train on it. A box line (`cls cx cy w h`) becomes its 4 rectangular corners; a
+    line that is already a polygon (cls + >=3 xy pairs) passes through unchanged. Needed
+    because the on-domain Roboflow sets are mixed — some export polygons, some only boxes."""
+    if len(parts) != 5:
+        return " ".join(parts)  # already a polygon (or malformed — left for validate_dataset)
+    cls = parts[0]
+    cx, cy, w, h = map(float, parts[1:])
+    x0, y0, x1, y1 = cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2
+    c = lambda v: f"{min(1.0, max(0.0, v)):.6f}"  # clamp into the valid [0,1] range
+    return " ".join([cls, c(x0), c(y0), c(x1), c(y0), c(x1), c(y1), c(x0), c(y1)])
 
 
 def merge_aircraft() -> None:
@@ -281,13 +297,16 @@ def merge_aircraft() -> None:
                                 continue
                             parts = ln.split()
                             parts[0] = str(idx_map.get(int(parts[0]), parts[0]))
-                            out_lines.append(" ".join(parts))
+                            out_lines.append(_seg_line(parts))
                     (lbl_dst / f"{stem}.txt").write_text(
                         "\n".join(out_lines) + ("\n" if out_lines else ""), encoding="utf-8")
 
     data_yaml = AIRCRAFT_DIR / "data.yaml"
     data_yaml.write_text(
-        "path: .\ntrain: images/train\nval: images/val\ntest: images/test\n"
+        # absolute path (posix slashes) so ultralytics resolves it the same regardless of
+        # CWD / datasets_dir — a relative `path: .` was mis-resolved to the repo root.
+        f"path: {AIRCRAFT_DIR.resolve().as_posix()}\n"
+        "train: images/train\nval: images/val\ntest: images/test\n"
         "names:\n" + "".join(f"  {i}: {n}\n" for i, n in enumerate(unified)),
         encoding="utf-8",
     )
@@ -377,9 +396,12 @@ def _demo() -> None:
         # remapped to point at that same shared index (not left at their own old index).
         unified_names = [ln.split(":", 1)[1].strip() for ln in cfg.splitlines() if ":" in ln and ln.strip()[0].isdigit()]
         crack_idx = unified_names.index("crack")
-        lbl_a = (AIRCRAFT_DIR / "labels" / "train" / "aircraft-dent-crack__im1.txt").read_text().split()[0]
-        lbl_b = (AIRCRAFT_DIR / "labels" / "val" / "aircraft-skin-defects__im2.txt").read_text().split()[0]
+        row_a = (AIRCRAFT_DIR / "labels" / "train" / "aircraft-dent-crack__im1.txt").read_text().split()
+        row_b = (AIRCRAFT_DIR / "labels" / "val" / "aircraft-skin-defects__im2.txt").read_text().split()
+        lbl_a, lbl_b = row_a[0], row_b[0]
         assert int(lbl_a) == crack_idx == int(lbl_b), (lbl_a, lbl_b, crack_idx, unified_names)
+        # both synthetic sources used box labels (5 fields) -> must now be 4-corner polygons (9 fields)
+        assert len(row_a) == 9 and len(row_b) == 9, (row_a, row_b)
         assert (AIRCRAFT_DIR / "images" / "train" / "aircraft-dent-crack__im1.jpg").exists()
         assert (AIRCRAFT_DIR / "images" / "val" / "aircraft-skin-defects__im2.jpg").exists()
         print(f"merge_aircraft self-check OK  |  unified classes {unified_names}, "

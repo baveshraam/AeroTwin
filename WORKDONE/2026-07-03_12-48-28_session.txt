@@ -1,0 +1,183 @@
+AeroTwin — Session Log
+Date/time: 2026-07-03 12:48 IST (session actually spanned 2026-07-02 ~23:30 -> 2026-07-03 ~13:00)
+Machine: Windows laptop, RTX 4060 Laptop GPU (8GB), CUDA 13.2, i9-13900HX
+Repo: c:\Bavesh\Hack\Tata-Innovent  |  GitHub: baveshraam/AeroTwin (private)
+Branch: feat/session5-honesty-real-ml (pushed, up to date with origin)
+
+===========================================================================
+CONTEXT / GOAL GOING IN
+===========================================================================
+Registration for Tata InnoVent-27 closes 2026-07-05 — two days out. Directive: get
+the software side fully working now; hardware (Pi deployment) is explicitly deferred.
+Six parallel work items requested while a GPU calibration probe ran: Roboflow prep,
+an anomaly-detection branch POC, pipeline robustness stress-testing, an offline
+network-call audit, a training-budget doc, and an INT8 ONNX export dry-run.
+
+===========================================================================
+WHAT WAS DONE THIS SESSION
+===========================================================================
+
+1) OFFLINE INTEGRITY AUDIT (for the ITAR "no cloud" pitch)
+   Grepped src/ and tools/ for every network primitive. Verdict: the live --real
+   pipeline makes ZERO internet calls. The only network-shaped call is copilot.py's
+   optional Ollama request (localhost:11434, not internet), gated by a 0.4s health
+   check that fails closed to the deterministic template/tool-router path. Everything
+   else (vendor_three.py, fetch_datasets.py, ultralytics auto-download) is one-time
+   tooling/setup, never invoked by the pipeline itself.
+   CAVEAT FOUND AND FIXED: tools/train.py's export_edge() left INT8 calibration data
+   unspecified, so ultralytics silently downloaded a generic 8-image "coco8-seg" set
+   over the network AND calibrated a crack detector's INT8 ranges on furniture/animal
+   photos (statistically the wrong distribution). Fixed: export_edge() now takes
+   calib_data (default "crack-seg.yaml", a real, already-local crack corpus) — no
+   network call, and calibration images actually match the deployed model's domain.
+
+2) PIPELINE ROBUSTNESS — stress test + one real bug found and fixed
+   Ran all 8 module self-checks (twin, paris, copilot, audit/workorder, shm,
+   federated, planner) — all green. Wrote and ran 19 malformed/edge-case inputs
+   against the L0->L3 chain (no ArUco marker, corrupted image bytes, nonexistent
+   path, zero/negative cycle deltas, empty findings, empty DB, empty fleet plan,
+   unmapped SRM entry, missing/tampered audit log) — 18/19 degraded gracefully with
+   no crash out of the box.
+   BUG FOUND AND FIXED: src/l3_agent/agent.py's retrieve() matched a manual excerpt
+   on defect-type keyword ALONE (OR logic across defect_type / ata_zone needles).
+   Since data/srm_limits.csv already has a crack entry at ATA 57 with a DIFFERENT
+   limit (10mm, SRM 57-20-01) than ATA 53's crack entry (12mm, SRM 53-30-01), a
+   crack at ATA 57 was silently retrieving the ATA-53 excerpt — correct citation
+   NUMBER, wrong pasted regulation TEXT. This directly undermines the "citation-
+   required guardrail" pitch. Fixed to require both defect-type AND zone match in
+   the same paragraph; verified the ATA-57 case now correctly ESCALATEs instead of
+   fabricating a plausible-looking excerpt, with no regression on the ATA-53 paths.
+   Minor (not fixed, flagged only): pipeline.run_scan() takes detections[0] only —
+   if L0 ever returns >1 overlapping detection, the rest are silently dropped with
+   no message. Not reachable today (L0 never returns >1), so left as-is.
+
+3) ROBOFLOW PREP — ready for zero-fiddling `--stage adapt` after signup
+   tools/fetch_datasets.py's Roboflow branch was a stub that only printed
+   instructions; it now actually downloads via the roboflow SDK once
+   ROBOFLOW_API_KEY is set. Bigger fix: Roboflow's own YOLOv8 export layout
+   (train/valid/test top dirs, each project's own class list/indices) does NOT
+   match what --stage adapt expects (one data.yaml, Ultralytics' own images/{split}
+   layout). New merge_aircraft() (+ --merge-aircraft flag) unifies both aircraft
+   Roboflow exports: dedupes class names case-insensitively, remaps every label's
+   class index into one shared list, renames valid/->val/, prefixes filenames by
+   source to avoid collisions. Verified correct with a synthetic two-source test
+   where "crack" is index 1 in one source and index 0 in the other — both remap to
+   the same shared index. New tools/validate_dataset.py checks label integrity
+   (orphan labels, out-of-range class ids, malformed coords, per-class counts) —
+   proved clean against the real on-disk crack-seg dataset (3717/200/112 images).
+
+4) ANOMALY BRANCH — real MVTec proof, then consolidated into the pipeline module
+   Did NOT know at first that src/l0_detect/anomaly.py already existed (a real,
+   pipeline-integrated PatchCore module from an earlier session, self-checked only
+   on SYNTHETIC patches so far — the prior WORKDONE log's own "recommended next
+   steps" flagged real-dataset validation as still open). Built a standalone
+   tools/train_anomaly.py first to prove PatchCore against REAL data fast: pulled
+   MVTec AD's "bottle" category directly from MVTec's own downloads page (155MB,
+   real per-category links scraped from the page, not guessed), got image-level
+   AUROC = 1.000 on the real held-out test set (good vs. broken_large/broken_small/
+   contamination) in 40s total on CPU (13s bank-build + 27s eval) — PatchCore needs
+   no backprop, so this never touched the GPU calibration run alongside it.
+   Then closed the loop: ran src/l0_detect/anomaly.py's own train_from_folder() on
+   the same real MVTec bottle train/good images, so the PIPELINE's actual anomaly
+   module (not just the side validator) now has a bank fit on real data instead of
+   only synthetic patches. tools/train_anomaly.py is kept deliberately (it is the
+   AUROC-on-real-labeled-data validator; anomaly.py has no labeled test set to
+   self-evaluate against, so the two are complementary, not redundant).
+
+5) INT8 ONNX EXPORT — dry-run proven end-to-end, twice
+   First run (generic pretrained yolov8s-seg.pt as a stand-in, since no trained
+   weights existed yet): succeeded, produced a valid 12MB ONNX file — but that's
+   when the coco8-seg network-download + wrong-calibration-domain issue (see #1)
+   was caught. Second run, after fixing calib_data: a full 200-image/1280px real
+   calibration run was taking too long for what should be a quick dry-run (killed
+   it after the CPU-bound calibration pass ran far longer than useful); substituted
+   a 24-real-image calibration subset instead — succeeded in 30.6s, and the output
+   ONNX passed both onnx.checker.check_model() and an actual onnxruntime inference
+   pass. Export path is proven correct; the real production export (against the
+   deployed crack model, full calibration set) is a rerun away.
+
+6) BASE-STAGE TRAINING — ACTUALLY COMPLETED (this is the big one)
+   The GPU calibration probe I was told not to disturb (3-epoch test) hung during
+   setup — confirmed via CPU-time diagnostics (26 seconds of CPU time across more
+   than an hour of wall clock, no dataloader worker subprocesses ever spawned) —
+   never reached the training loop. Separately, a full `--stage base` run (100
+   epochs planned) also produced zero output. What actually went the distance was
+   a third attempt, `base-2` (batch dropped 8->6 to fit imgsz 1280 in 8GB VRAM,
+   epochs 100->40, patience 33->13) — completed all 40 epochs in 2.82 hours
+   (~254s/epoch, consistent 241-282s range throughout, no slowdowns; the loss-curve
+   jump at epoch 31 is the expected close_mosaic=10 augmentation-schedule change,
+   not a problem).
+   RESULT on held-out val (crack-seg, 200 images, 249 crack instances) — box:
+   precision 0.588 / RECALL 0.667 / mAP50 0.613 / mAP50-95 0.218; mask: precision
+   0.368 / RECALL 0.427 / mAP50 0.256 / mAP50-95 0.050. Recall is the number this
+   project's own honesty rule calls for (a missed crack is the costly error, not
+   mAP) — 67% box / 43% mask recall is a real, working base crack detector.
+   tools/train.py was substantially rewritten (not by me, in parallel) since I last
+   touched it — it now reads the actual m.trainer.save_dir instead of guessing a
+   hardcoded runs/base/ path (which is why promotion worked correctly despite
+   landing in base-2, not base), and gained --deploy-base / --model / --fraction /
+   --device / --calib-data flags. Verified models/weights/crack-base.pt is
+   checksum-identical to base-2's actual best.pt (the promotion worked).
+   NOT YET DONE: models/weights/crack-seg.pt (the slot detect.py actually loads for
+   --real inference) is still empty — `--deploy-base` has not been run. The base
+   model is public-crack-corpus-trained, not yet fuselage-adapted (say so if
+   deployed before the aircraft adapt stage runs).
+
+7) GIT / BRANCH STATE CHECKED
+   - feat/session5-honesty-real-ml is up to date with origin, working tree clean
+     (models/weights/, data/datasets/, runs/, *.pt/*.onnx are all gitignored, so
+     none of the training artifacts above are meant to be committed).
+   - master is a strict subset of feat/session5-honesty-real-ml (9 commits behind,
+     nothing on master that isn't already here) — normal, will land via PR later.
+   - origin/feat/ui-hardening-honesty-hotspots is FULLY merged into this branch
+     (via the existing 2da8298 merge commit) but not yet into master directly.
+   - origin/finish-l0-l3-app (teammate krishna2prakash, commit 9286534, dated
+     2026-07-01) is NOT merged into this branch or master. `git merge-tree` shows
+     6 real conflicts: data/dashboard_preview.html (generated artifact), data/
+     samples/panel_demo.png (binary), docs/task-board.md, and THREE SOURCE FILES —
+     src/l1_twin/view.py, src/pipeline.py, tools/render_dashboard.py. The commit's
+     own message describes genuinely valuable fixes not yet present here: audit.py
+     verify() failing safe on corrupt/tampered JSON instead of raising (this one
+     merges CLEAN, no conflict), and pipeline.py labelling --real-with-no-weights
+     honestly instead of falsely claiming "yolov8-seg" ran. This needs a deliberate
+     manual reconciliation pass, not a fast-forward or blind merge.
+
+===========================================================================
+REGRESSION CHECKS RUN (all passed)
+===========================================================================
+   - python -m src.l1_twin.twin / .planner / .shm / .federated (self-checks)
+   - python -m src.l2_progress.paris (Monte-Carlo RUL self-check)
+   - python -m src.l3_agent.workorder / .copilot (lifecycle+PDF, tool+guardrail)
+   - python tools/fetch_datasets.py --selfcheck (registry + merge_aircraft proof)
+   - python tools/validate_dataset.py --selfcheck + against real crack-seg
+   - python tools/train_anomaly.py --selfcheck + against real MVTec bottle
+   - python -m src.pipeline --seed (still nets Rs 6.12 Cr, 1 grounded/2 serviced/1
+     deferred) — re-run after stress-test tails to confirm the demo DB/audit log
+     were left clean, no test pollution
+   - Fresh YOLO().val() on the actual base-2 best.pt against crack-seg val split
+     (the authoritative numbers reported in #6 above, not just the training log)
+
+===========================================================================
+ENVIRONMENT NOTES
+===========================================================================
+   - torch 2.6.0+cu124, torchvision 0.21.0+cu124, ultralytics 8.4.84, onnx 1.22.0,
+     onnxruntime 1.27.0, onnxslim 0.1.94, scikit-learn 1.7.2 all present.
+   - MVTec AD "bottle" category downloaded to data/datasets/mvtec-ad/bottle/
+     (gitignored, re-fetch via the per-category links on MVTec's own downloads
+     page if this machine's copy is ever lost — do not guess the URL, scrape it
+     fresh, the hashed share links can change).
+   - models/weights/ currently holds: crack-base.pt (real, base-stage trained,
+     NOT deployed to crack-seg.pt), anomaly-bottle.npz (tools/train_anomaly.py's
+     validator bank), and anomaly_bank.npz (the pipeline-integrated PatchCore bank,
+     4096x384, threshold 1.817, fit on the same real MVTec images and verified on
+     real held-out test images: 5/5 broken_large flagged, 0/5 false alarms).
+
+===========================================================================
+RECOMMENDED NEXT STEPS — see the GPU/non-GPU task split delivered in-conversation
+===========================================================================
+Short version: deploy crack-base.pt (`--deploy-base`) and re-run the INT8 export
+against it for real; get a Roboflow key and run the aircraft adapt stage (GPU);
+resolve the finish-l0-l3-app merge (non-GPU); wire the anomaly branch's score()
+into the dashboard/API (non-GPU); everything else is closer to demo-ready than
+"not started." Full split with file-ownership boundaries is in the chat, not
+duplicated here to avoid the two going stale independently.

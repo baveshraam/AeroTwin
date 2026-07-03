@@ -39,3 +39,9 @@ runs/
 
 # Local Claude Code tool settings
 .claude/
+
+# Secrets — API keys must never be committed
+roboflow-key-1
+roboflow-publishable-api-key
+*api-key*
+*.key
