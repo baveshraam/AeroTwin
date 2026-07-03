@@ -28,7 +28,7 @@ from pathlib import Path
 
 import numpy as np
 
-WEIGHTS_DIR = Path(__file__).resolve().parents[2] / "models" / "weights"
+WEIGHTS_DIR = Path(__file__).resolve().parents[2] / "ml" / "models"
 BANK_PATH = WEIGHTS_DIR / "anomaly_bank.npz"
 
 _IMG = 224  # backbone input side

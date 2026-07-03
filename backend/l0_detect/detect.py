@@ -17,7 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
-WEIGHTS = Path(__file__).resolve().parents[2] / "models" / "weights" / "crack-seg.pt"
+WEIGHTS = Path(__file__).resolve().parents[2] / "ml" / "models" / "crack-seg.pt"
 
 
 def detect_defects(image_path: str | None = None, mock: bool = False) -> list[dict]:
