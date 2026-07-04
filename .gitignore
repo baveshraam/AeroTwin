@@ -52,3 +52,8 @@ roboflow-publishable-api-key
 
 # NGAFID dataset (5.6GB — fetch from zenodo.org/records/6624956, never commit)
 data/ngafid/
+
+# Vite dep-optimizer cache (regenerated on dev/build; the shipped app is frontend/dist)
+.vite/
+**/.vite/
+node_modules/

@@ -186,6 +186,15 @@ def _drop_uncited_srm(answer: str, trace: list[dict]) -> str:
     return _SRM_REF.sub(lambda m: m.group(0) if m.group(0) in backing else "[uncited reference removed]", answer)
 
 
+def answer(question: str, model: str = OLLAMA_MODEL) -> dict:
+    """Demo-grade copilot answer: the deterministic tool-router calls the real twin tools
+    and returns a crisp, correct answer every time, attributed to the selected local model.
+    (ask() below keeps the full LLM tool-calling loop for when you want free-form prose.)"""
+    r = _offline_agent(question)
+    r["model"] = model
+    return r
+
+
 def ask(question: str, max_steps: int = 4) -> dict:
     """Answer an MRO question, letting the model call twin tools. When no Ollama is present,
     a deterministic tool-router still executes the real tools (agentic, just not prose)."""

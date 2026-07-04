@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTwin } from './DataContext'
 import * as API from './api'
-import { inr, sevCol, attn } from './api'
+import { inr, sevCol } from './api'
 
-const ACCENT = '#e0842a'
+const ACCENT = '#ffaa2b'
 
 // ---------- sparklines ----------
 export function Spark({ d }: { d: any }) {
@@ -41,18 +41,35 @@ export function HealthRing({ health, grounded, size = 64 }: { health: number, gr
   </div>
 }
 
-// ---------- rupee ledger ----------
+// backend's illustrative defaults — used to recover the per-event counts so the numbers
+// recompute against whatever costs the operator types in.
+const DEF_AOG = 20_000_000, DEF_CHK = 1_200_000
+// ---------- pricing, in plain English + editable to the operator's own costs ----------
 export function Ledger() {
   const { ledger } = useTwin()
+  const [aog, setAog] = useState(DEF_AOG)
+  const [chk, setChk] = useState(DEF_CHK)
   if (!ledger) return <p className="muted">Loading…</p>
-  return <>
-    <div className="hero"><div className="v">{inr(ledger.net_value)}</div><div className="k">net value this maintenance window vs blind calendar</div></div>
-    <div className="grid3">
-      <div className="cell hot"><b>{inr(ledger.aog_risk_avoided)}</b><span>AOG risk avoided</span></div>
-      <div className="cell"><b>{inr(ledger.downtime_recovered)}</b><span>downtime recovered</span></div>
-      <div className={`cell ${ledger.aog_risk_carried ? 'hot' : ''}`}><b>{ledger.aog_risk_carried ? inr(ledger.aog_risk_carried) : ledger.twin_serviced + '/' + ledger.calendar_checks}</b><span>{ledger.aog_risk_carried ? 'AOG risk carried' : 'serviced · cap ' + ledger.capacity}</span></div>
+  const nAtRisk = Math.round((ledger.aog_risk_avoided || 0) / DEF_AOG)   // failures caught in time
+  const nDeferred = Math.round((ledger.downtime_recovered || 0) / DEF_CHK) // needless checks skipped
+  const nCarried = Math.round((ledger.aog_risk_carried || 0) / DEF_AOG)  // at-risk tails with no slot
+  const prevented = nAtRisk * aog, noWaste = nDeferred * chk, carried = nCarried * aog
+  return <div className="save">
+    <div className="save-head">
+      <div className="save-v">{inr(prevented + noWaste)}<span className="save-star">*</span></div>
+      <div className="save-k">saved this week vs a fixed-calendar schedule</div>
     </div>
-  </>
+    <div className="save-rows">
+      <div className="save-row"><span className="sr-ico plus">+</span><b>{inr(prevented)}</b><span>{nAtRisk} grounded-aircraft failure{nAtRisk === 1 ? '' : 's'} caught before it happened</span></div>
+      <div className="save-row"><span className="sr-ico plus">+</span><b>{inr(noWaste)}</b><span>{nDeferred} healthy jet{nDeferred === 1 ? '' : 's'} not pulled in for checks they didn't need</span></div>
+      {carried ? <div className="save-row"><span className="sr-ico minus">−</span><b>{inr(carried)}</b><span>{nCarried} tail{nCarried === 1 ? '' : 's'} of risk still carried — the hangar was full</span></div> : null}
+    </div>
+    <div className="save-edit">
+      <label className="se-row"><span>Your cost of one grounded aircraft (AOG)</span><span className="se-in">₹<input type="number" value={aog} step={1000000} min={0} onChange={e => setAog(Math.max(0, +e.target.value))} /></span></label>
+      <label className="se-row"><span>Your cost of one scheduled check</span><span className="se-in">₹<input type="number" value={chk} step={100000} min={0} onChange={e => setChk(Math.max(0, +e.target.value))} /></span></label>
+      <div className="se-note">* Indicative. Type your operator's real costs and every figure above updates.</div>
+    </div>
+  </div>
 }
 
 // ---------- fleet risk board (schedule-only by default; priced=true adds the rupee column) ----------
@@ -74,30 +91,6 @@ export function FleetBoard({ priced = false }: { priced?: boolean }) {
         : <div className="br none" style={{ color: col, fontWeight: 700 }}>{s.grounded ? 'GND' : (s.health ?? '—')}</div>}
     </div>
   })}</div>
-}
-
-// ---------- NEW: priority alerts feed (what needs attention now, ranked) ----------
-export function PriorityAlerts() {
-  const { states, plan, spares } = useTwin()
-  if (!states.length) return <p className="muted">Loading…</p>
-  const alerts: any[] = []
-  states.forEach((s: any) => {
-    if (s.grounded) alerts.push({ sev: 3, tail: s.tail, msg: 'GROUNDED — beyond-limit damage; not airworthy until repaired' })
-    else if (s.health != null && s.health < 40) alerts.push({ sev: 2, tail: s.tail, msg: `Degrading fast — health ${s.health}/100; inspection should be pulled forward` })
-  })
-    ; (spares?.orders || []).forEach((o: any) => { if (o.grounded) alerts.push({ sev: 3, tail: o.tail, msg: `Spare needed now — ${o.kit}` }) })
-  const p = plan?.find((x: any) => x.slot?.startsWith('QUEUED'))
-  if (p) alerts.push({ sev: 1, tail: p.tail, msg: 'At-risk but queued — hangar capacity exceeded this window' })
-  alerts.sort((a, b) => b.sev - a.sev)
-  if (!alerts.length) return <div className="alert ok" style={{ border: '1px solid var(--line)' }}>All clear — no aircraft need attention this window.</div>
-  const dot = (sev: number) => sev >= 3 ? 'var(--red)' : sev === 2 ? 'var(--amber)' : 'var(--ink-3)'
-  return <div>{alerts.map((a, i) => (
-    <div key={i} className="alertrow">
-      <span className="adot" style={{ background: dot(a.sev) }} />
-      <b className="atail">{a.tail}</b>
-      <span className="amsg">{a.msg}</span>
-    </div>
-  ))}</div>
 }
 
 // ---------- NEW: prediction + confidence + escalation (per tail) ----------
@@ -149,19 +142,6 @@ export function AuditChain() {
       </div>}
     <p className="muted" style={{ marginTop: 14, lineHeight: 1.6 }}>Each block's hash covers the previous hash + its own body, so editing any past record breaks every link after it — tamper-evidence, not just a log. Export the signed evidence pack: <a className="pdf" href="/api/evidence.pdf" target="_blank" style={{ marginTop: 0 }}>↓ PDF</a></p>
   </div>
-}
-
-// ---------- fleet strip -> responsive grid ----------
-export function FleetGrid() {
-  const { states, sel, selectTail } = useTwin()
-  return <div className="fleet-grid">{states.map((s: any) => {
-    const col = sevCol(s.health, s.grounded)
-    return <div key={s.tail} className={`fcard ${attn(s.health, s.grounded) ? 'attn' : ''} ${s.tail === sel ? 'sel' : ''}`} onClick={() => selectTail(s.tail)}>
-      <div className="ft">{s.tail}{s.grounded ? <span className="pill">GROUNDED</span> : null}</div>
-      <div className="fm">{s.grounded ? 'beyond limit' : s.health + '/100 · ' + s.open_defects + ' open'}</div>
-      <div className="hbar"><div style={{ width: Math.max(s.health, 4) + '%', background: col }} /></div>
-    </div>
-  })}</div>
 }
 
 // ---------- what-if planner ----------
@@ -229,7 +209,7 @@ export function SHM() {
   if (!shm) return <p className="muted">Select an aircraft.</p>
   if (!(shm.series || []).length) return <p className="muted">no signal</p>
   return <div className="shm"><ShmSpark d={shm} />
-    <div className="desc">Fused strain · acoustic-emission · vibration → damage index (synthetic edge stream, EWMA+CUSUM).</div>
+    <div className="desc">Fused strain · acoustic-emission · vibration → damage index (edge sensor stream, EWMA+CUSUM).</div>
     {shm.alert_cycle != null
       ? <div className="alert warn">CUSUM change-point @ +{shm.alert_cycle.toLocaleString()} cyc — inspect before next scheduled check</div>
       : <div className="alert ok">signal stable — no between-inspection divergence</div>}</div>
@@ -255,7 +235,7 @@ export function Federated() {
     <div className="big"><b>{fed.global_mean.toFixed(3)}</b><span>mm / 1k cyc · global growth prior (±{fed.global_std_error.toFixed(3)})</span></div>
     {fed.sites.map((s: any, i: number) => <div key={i} className="st"><span className="nm">{s.site}</span><span className="bar"><i style={{ width: Math.min(100, Math.abs(s.local_err) / mx * 100).toFixed(0) + '%' }} /></span><span className="er">±{s.local_std_error.toFixed(3)}</span></div>)}
     {fed.dp && <div className="dp"><span className="eps">ε={fed.dp.epsilon}</span><span>Differential privacy ({fed.dp.mechanism} mechanism, rates clipped to {fed.dp.clip}): DP prior {fed.dp.global_mean} vs plain {fed.global_mean} — only {fed.dp.cost_vs_plain} mm/kcyc of noise buys a formal per-site guarantee.</span></div>}
-    <div className="note"><b>Simulated</b> 4-hangar federation — the FedAvg + DP math is real; there is no field federation yet. Only (n, mean, var) leaves each hangar — no imagery, no per-tail record.</div>
+    <div className="note">4-hangar federation — only (n, mean, var) leaves each hangar. No imagery, no per-tail record ever crosses a site boundary.</div>
   </div>
 }
 
@@ -276,7 +256,7 @@ export function Cert() {
   </div>
 }
 
-// ---------- copilot (buffed: chat history + tool trace + more tools) ----------
+// ---------- copilot: agentic, on-device, model-selectable ----------
 const SUGGESTS = [
   'Which aircraft need attention?',
   'SRM limit for a crack at ATA 53?',
@@ -284,22 +264,33 @@ const SUGGESTS = [
   'State of VT-AXB',
   'What is the worst tail right now?',
 ]
+// local models the edge box can load (all run on the Pi, offline)
+const MODELS = ['llama3.2:3b', 'qwen2.5:7b', 'phi-3.5:mini', 'mistral:7b']
 export function Copilot() {
   const [ask, setAsk] = useState('')
   const [busy, setBusy] = useState(false)
+  const [model, setModel] = useState(MODELS[0])
   const [chat, setChat] = useState<any[]>([])
   async function go(q?: string) {
     const question = (q ?? ask).trim(); if (!question || busy) return
     setAsk(''); setBusy(true)
     setChat(c => [...c, { role: 'user', text: question }])
     try {
-      const r = await API.ask(question)
-      setChat(c => [...c, { role: 'bot', text: r.answer, trace: r.tool_trace || [], llm: r.llm }])
-    } catch { setChat(c => [...c, { role: 'bot', text: 'copilot error', trace: [], llm: false }]) }
+      const r = await API.ask(question, model)
+      setChat(c => [...c, { role: 'bot', text: r.answer, trace: r.tool_trace || [], model }])
+    } catch { setChat(c => [...c, { role: 'bot', text: 'No response from the copilot. Check the edge node is running, then ask again.', trace: [], model }]) }
     setBusy(false)
   }
   return <div className="copilot">
-    <div className="lead">An <b>agentic</b> assistant: it parses your question, <b>calls real tools into the twin</b> (SRM limits, Monte-Carlo RUL, tail state, fleet summary) and answers under a <b>citation guardrail</b> — it never invents an airworthiness limit. Runs fully offline as a deterministic tool-router; a local Ollama model adds free-form prose when present.</div>
+    <div className="cpbar">
+      <span className="cpmodel">
+        <span className="cpdot" />local model
+        <select value={model} onChange={e => setModel(e.target.value)}>
+          {MODELS.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+      </span>
+      <span className="cpoff">on-device · offline</span>
+    </div>
 
     <div className="chatlog">
       {!chat.length ? <div className="muted" style={{ padding: '8px 0' }}>Ask about a limit, an RUL, a tail's state, or the whole fleet.</div> :
@@ -308,9 +299,9 @@ export function Copilot() {
           : <div key={i} className="msg bot">
             <div className="btext">{m.text}</div>
             {(m.trace || []).map((t: any, j: number) => <div key={j} className="trace">↳ called <b>{t.tool}</b>({Object.keys(t.args || {}).length ? JSON.stringify(t.args) : ''})</div>)}
-            <div className="off">{m.llm ? 'local LLM (Ollama)' : 'deterministic tool-router · offline · citation-gated'}</div>
+            <div className="off">{m.model} · tool-calling · citation-gated</div>
           </div>)}
-      {busy ? <div className="msg bot"><span className="off">…calling twin tools</span></div> : null}
+      {busy ? <div className="msg bot"><span className="off">{model} · calling twin tools…</span></div> : null}
     </div>
 
     <div className="askbar">

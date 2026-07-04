@@ -1,45 +1,51 @@
   :root{
-    /* ---- dark glass base (near-black, cool) ---- */
-    --bg:#080b10;                 /* near-black hangar base */
-    --bg-2:#0d1219;               /* stage gradient outer */
-    --ink:#eef2f7;                /* near-white text (used at 4 opacities for hierarchy) */
-    --accent:#e0842a;             /* warm amber = "look here" (focus / attention / hero) */
+    /* ============================================================
+       "MAINTENANCE CONTROL CONSOLE" — avionics-black instrument deck.
+       Solid console panels (no frosted glass), steel hairlines,
+       CAS-annunciator colour code, monospaced instrument type.
+       ============================================================ */
+    --bg:#070a0e;                 /* avionics black */
+    --bg-2:#0a0f15;               /* stage gradient outer */
+    --ink:#eaf1f6;                /* crisp instrument white */
+    --accent:#ffaa2b;             /* CAUTION AMBER = the one attention signal + brand */
 
-    /* ---- text hierarchy (opacity only, no new hues) ---- */
-    --ink-2:rgba(238,242,247,.66);
-    --ink-3:rgba(238,242,247,.42);
-    --ink-4:rgba(238,242,247,.24);
-    --line:rgba(255,255,255,.10);
-    --line-2:rgba(255,255,255,.055);
-    --panel:rgba(255,255,255,.03);
+    /* ---- text hierarchy (opacity only) ---- */
+    --ink-2:rgba(234,241,246,.60);
+    --ink-3:rgba(234,241,246,.38);
+    --ink-4:rgba(234,241,246,.20);
+    --line:rgba(150,175,195,.15);          /* steel hairline — the console seam */
+    --line-2:rgba(150,175,195,.08);
+    --panel:#0e141b;
 
-    /* ---- ONE frosted-glass material, reused on every panel ---- */
-    --glass:rgba(255,255,255,.055);        /* outer frame fill (further plane) */
-    --glass-2:rgba(255,255,255,.085);      /* raised inner panel fill (nearer plane) */
-    --glass-border:rgba(255,255,255,.13);  /* hairline edge that catches light — sells the glass */
-    --glass-blur:blur(20px) saturate(165%);
-    --surface:rgba(255,255,255,.045);      /* legacy alias -> glass fill */
-    --hi:inset 0 1px 0 rgba(255,255,255,.14);   /* faint top-edge highlight (lit from above) */
-    --lo:inset 0 -1px 0 rgba(0,0,0,.32);        /* soft bottom-edge shadow */
-    --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 34px rgba(0,0,0,.42);
-    --shadow-lg:0 2px 8px rgba(0,0,0,.42),0 22px 60px rgba(0,0,0,.55);
+    /* ---- SOLID console material (var names kept so every panel inherits) ---- */
+    --glass:#0e141b;                       /* outer console panel */
+    --glass-2:#131b24;                     /* raised inner readout */
+    --glass-border:rgba(150,175,195,.16);  /* steel bezel hairline */
+    --glass-blur:none;                     /* instrument deck: no frost */
+    --surface:#0e141b;
+    --hi:inset 0 1px 0 rgba(255,255,255,.04);   /* faint bezel top-light */
+    --lo:inset 0 -1px 0 rgba(0,0,0,.4);
+    --shadow:0 1px 0 rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.35);
+    --shadow-lg:0 2px 0 rgba(0,0,0,.5),0 16px 44px rgba(0,0,0,.5);
 
     /* ---- neumorphic dual-shadow (interactive controls only) ---- */
-    --neu-out:-3px -3px 8px rgba(255,255,255,.05),4px 4px 12px rgba(0,0,0,.55);
-    --neu-in:inset 2px 2px 6px rgba(0,0,0,.6),inset -2px -2px 6px rgba(255,255,255,.05);
+    --neu-out:-2px -2px 6px rgba(255,255,255,.03),3px 3px 10px rgba(0,0,0,.6);
+    --neu-in:inset 2px 2px 6px rgba(0,0,0,.65),inset -1px -1px 4px rgba(255,255,255,.03);
 
-    /* ---- functional health accents (sit ON TOP of the glass system) ---- */
-    --cyan:#35e0d0;               /* healthy / nominal */
-    --amber:#f2a93b;              /* attention */
-    --red:#ff5b6a;                /* grounded / beyond-limit */
-    --accent-2:rgba(224,132,42,.18);
-    --accent-3:rgba(224,132,42,.09);
-    --cyan-3:rgba(53,224,208,.12);
-    --red-3:rgba(255,91,106,.13);
+    /* ---- CAS annunciator code (sits on top) ---- */
+    --cyan:#34e0c8;               /* GO / normal / airworthy (instrument mint) */
+    --amber:#ffaa2b;              /* CAUTION / attention */
+    --red:#ff4d5e;                /* WARNING / grounded */
+    --hud:#4cc5e0;                /* pilot-selectable / interactive / copilot */
+    --accent-2:rgba(255,170,43,.16);
+    --accent-3:rgba(255,170,43,.08);
+    --cyan-3:rgba(52,224,200,.12);
+    --red-3:rgba(255,77,94,.13);
+    --hud-3:rgba(76,197,224,.12);
 
-    --mono:'JetBrains Mono Variable',ui-monospace,'Cascadia Code',Consolas,monospace;
-    --sans:'Manrope Variable','Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
-    --display:'Sora Variable','Manrope Variable',system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+    --sans:'Space Grotesk Variable','Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --display:'Space Grotesk Variable',system-ui,sans-serif;
     font-family:var(--sans);
   }
   *{box-sizing:border-box}

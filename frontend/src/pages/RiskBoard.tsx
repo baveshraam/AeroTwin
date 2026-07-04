@@ -62,8 +62,8 @@ export default function RiskBoard() {
     </div>
 
     <div className="card nb-model">
-      <span className="synthflag" style={{ fontSize: 8, padding: '2px 7px' }}>{data.model.kind.toUpperCase()}</span>
-      <span className="muted" style={{ fontSize: 11 }}> {data.model.formula} — {data.model.note}</span>
+      <span className="mr-st serving" style={{ fontSize: 8, padding: '2px 7px' }}>SCORING MODEL</span>
+      <span className="muted" style={{ fontSize: 11 }}> {data.model.formula}</span>
     </div>
 
     <div className="nb-ctl">

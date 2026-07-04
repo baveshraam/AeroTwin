@@ -87,8 +87,18 @@ def findings_for_tail(tail: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+# In-memory extra tails added at runtime (e.g. the console's "add aircraft" button).
+# Kept out of the SQLite file on purpose: the demo fleet can grow without mutating the
+# committed twin.db, and a server restart resets to the seeded fleet.
+_EXTRA: list[dict] = []
+
+
+def add_extra(findings: list[dict]) -> None:
+    _EXTRA.extend(findings)
+
+
 def all_findings() -> list[dict]:
     con = connect()
     rows = con.execute("SELECT * FROM findings ORDER BY tail, cycles").fetchall()
     con.close()
-    return [dict(r) for r in rows]
+    return [dict(r) for r in rows] + _EXTRA

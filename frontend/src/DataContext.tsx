@@ -52,13 +52,27 @@ export function TwinProvider({ children }: { children: ReactNode }) {
 
   async function scrubTo(cyc: number) {
     setScrub(cyc)
-    if (cyc === 0) { setFleetStat(''); loadFleet(); return }
+    if (cyc === 0) {
+      setFleetStat(''); loadFleet()
+      if (selRef.current) API.getTail(selRef.current).then(setTail).catch(() => { })
+      return
+    }
     try {
       const r = await API.getScrub(cyc)
       setStates(r.states); setPlan(r.plan.plan); setLedger(r.plan.ledger)
       const gnd = r.states.filter((s: any) => s.grounded).length
       setFleetStat(`${gnd} grounded · ${r.states.length - gnd} flying`)
+      // age the selected aircraft's 3D twin in step with the fleet
+      if (selRef.current) API.getTail(selRef.current, cyc).then(setTail).catch(() => { })
     } catch { setFleetStat('⚠ scrub unavailable') }
+  }
+
+  async function addAircraft() {
+    try {
+      const r = await API.addAircraft()
+      setStates(r.states); setPlan(r.plan.plan); setLedger(r.plan.ledger)
+      return r.added
+    } catch { return null }
   }
 
   useEffect(() => { loadFleet() }, [])
@@ -69,7 +83,7 @@ export function TwinProvider({ children }: { children: ReactNode }) {
 
   const value = {
     states, plan, ledger, sel, tail, shm, fed, spares, cert, tele, err, scrub, fleetStat,
-    selectTail, scrubTo, woAction, loadFleet,
+    selectTail, scrubTo, woAction, loadFleet, addAircraft,
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

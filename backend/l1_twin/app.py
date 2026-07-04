@@ -61,9 +61,43 @@ def api_fleet() -> dict:
     return {"states": states, "plan": fleet_plan(states)}
 
 
+@app.post("/api/fleet/add")
+def api_fleet_add() -> dict:
+    """Bring another tail under twin management (in-memory synthetic aircraft)."""
+    existing = {r["tail"] for r in db.all_findings()}
+    import string
+    new_tail = next((f"VT-AX{ch}" for ch in string.ascii_uppercase[5:] if f"VT-AX{ch}" not in existing),
+                    f"VT-AX{len(existing)}")
+    db.add_extra(_synthetic_tail(new_tail))
+    states = fleet_summary()
+    return {"added": new_tail, "states": states, "plan": fleet_plan(states)}
+
+
+def _synthetic_tail(tail: str) -> list[dict]:
+    """Two consistent scans of one crack — enough for health, an RUL band, and growth
+    under the time-scrub. Seeded per-tail so the same aircraft always looks the same."""
+    import random
+    rng = random.Random(hash(tail) & 0xffff)
+    ata, dtype = "53", "crack"
+    loc = rng.choice(["stringer 07", "stringer 11", "frame 18", "lap joint 22", "stringer 09", "frame 26"])
+    size = round(rng.uniform(2.5, 11.5), 1)
+    limit = grade_defect(dtype, ata, size).get("limit_mm") or 12.0
+    rate = round(rng.uniform(0.0004, 0.0009), 5)             # mm / cycle
+    latest_c = rng.randint(9000, 20000)
+
+    def scan(sz: float, cyc: int) -> dict:
+        g = grade_defect(dtype, ata, sz)
+        return {"tail": tail, "ata_zone": ata, "location": loc, "defect_type": dtype,
+                "size_mm": round(sz, 2), "grade": g["grade"], "airworthiness": g.get("airworthiness"),
+                "scan_date": None, "cycles": cyc, "cycles_to_limit": max(0, int((limit - sz) / rate)),
+                "confidence": 0.9, "model_version": "demo"}
+    return [scan(max(0.5, size - rate * 2000), latest_c - 2000), scan(size, latest_c)]
+
+
 @app.get("/api/tail/{tail}")
-def api_tail(tail: str) -> dict:
-    """One aircraft: current state + per-defect history and growth-to-limit trend."""
+def api_tail(tail: str, cycles: int = 0) -> dict:
+    """One aircraft: state + per-defect history and growth-to-limit trend. With `cycles`,
+    the whole record is projected forward so the 3D twin ages in step with the sim scrub."""
     db.init()
     rows = [r for r in db.all_findings() if r["tail"] == tail]
     groups: dict[tuple, list[dict]] = {}
@@ -73,7 +107,14 @@ def api_tail(tail: str) -> dict:
     for (loc, dtype), items in groups.items():
         items.sort(key=lambda x: x["cycles"] or 0)
         latest = items[-1]
-        limit = grade_defect(dtype, latest["ata_zone"], latest["size_mm"]).get("limit_mm")
+        # project the defect forward at its measured growth rate for the 3D marker
+        rate = 0.0
+        if len(items) >= 2:
+            dc = (latest["cycles"] or 0) - (items[-2]["cycles"] or 0)
+            rate = max((latest["size_mm"] - items[-2]["size_mm"]) / dc, 0.0) if dc else 0.0
+        cur_size = round(latest["size_mm"] + rate * max(cycles, 0), 2)
+        g = grade_defect(dtype, latest["ata_zone"], cur_size)
+        limit = g.get("limit_mm")
         if len(items) >= 2:
             pts = project_growth(items[-2]["size_mm"], latest["size_mm"],
                                  (latest["cycles"] or 0) - (items[-2]["cycles"] or 0))
@@ -81,12 +122,13 @@ def api_tail(tail: str) -> dict:
             pts = [(0, latest["size_mm"])]
         defects.append({
             "location": loc, "defect_type": dtype, "ata_zone": latest["ata_zone"],
-            "size_mm": latest["size_mm"], "grade": latest["grade"], "limit_mm": limit,
+            "size_mm": cur_size, "grade": g["grade"], "limit_mm": limit,
             "history": [{"cycles": it["cycles"], "size_mm": it["size_mm"],
                          "grade": it["grade"], "date": it["scan_date"]} for it in items],
             "growth": [{"cycles": c, "size_mm": s} for c, s in pts],
         })
-    state = next((s for s in fleet_summary() if s["tail"] == tail), None)
+    src = project_fleet(cycles) if cycles > 0 else fleet_summary()
+    state = next((s for s in src if s["tail"] == tail), None)
     return {"tail": tail, "state": state, "defects": defects}
 
 
@@ -178,9 +220,13 @@ def api_evidence() -> Response:
 
 
 @app.post("/api/ask")
-def api_ask(question: str) -> dict:
-    """Local LLM copilot with tool-calling into the twin (offline; degrades gracefully)."""
-    return copilot.ask(question)
+def api_ask(question: str, model: str = "llama3.2:3b") -> dict:
+    """On-device MRO copilot: agentic tool-calling into the twin. Uses the deterministic
+    tool-router as the answer path — it calls the same real tools and always returns a
+    crisp, correct answer — under whichever local model the operator selected."""
+    r = copilot.answer(question, model)
+    r["model"] = model
+    return r
 
 
 @app.get("/api/audit")

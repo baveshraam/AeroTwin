@@ -1,102 +1,139 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import ThreeScene, { SceneHandle } from '../ThreeScene'
 import { useTwin } from '../DataContext'
-import { HealthRing, FleetGrid, PriorityAlerts, FleetBoard } from '../panels'
-import { sevCol, attn } from '../api'
+import { HealthRing, Copilot } from '../panels'
+import { sevCol, inr, attn } from '../api'
 
+// CAS-annunciator status for a tail: GO (airworthy) · CAUTION (degrading) · STOP (grounded)
+const statOf = (s: any) => s.grounded ? 'stop' : (s.health != null && s.health < 55) ? 'caution' : 'go'
+const STAT_COL: any = { go: 'var(--cyan)', caution: 'var(--amber)', stop: 'var(--red)' }
+const PIPELINE = ['SENSE', 'PREDICT', 'TWIN', 'PRESCRIBE', 'PRICE', 'PROVE']
+
+const SIM_MAX = 12000, SIM_STEP = 600
 export default function Overview() {
   const scene = useRef<SceneHandle>(null)
-  const { tail, sel, states, scrub, scrubTo, fleetStat } = useTwin()
+  const { tail, sel, states, ledger, scrub, scrubTo, selectTail, addAircraft } = useTwin()
   const [view, setView] = useState('orbit')
-
+  const [playing, setPlaying] = useState(false)
+  const [adding, setAdding] = useState(false)
   useEffect(() => { if (tail) scene.current?.setTail(tail) }, [tail])
+
+  // live simulation: advance the fleet through the twin on a clock (▶). A ref tracks the
+  // latest cycle so the interval doesn't churn every step.
+  const scrubRef = useRef(scrub); scrubRef.current = scrub
+  useEffect(() => {
+    if (!playing) return
+    const id = setInterval(() => {
+      const next = scrubRef.current + SIM_STEP
+      if (next >= SIM_MAX) { scrubTo(SIM_MAX); setPlaying(false); return }
+      scrubTo(next)
+    }, 850)
+    return () => clearInterval(id)
+  }, [playing])
+
+  async function onAdd() { setAdding(true); const t = await addAircraft(); if (t) selectTail(t); setAdding(false) }
 
   const st = tail?.state || {}
   const grounded = states.filter((s: any) => s.grounded).length
-  const openFindings = states.reduce((a: number, s: any) => a + (s.open_defects || 0), 0)
+  const caution = states.filter((s: any) => statOf(s) === 'caution').length
+  const go = states.length - grounded - caution
   const avg = states.length ? Math.round(states.reduce((a: number, s: any) => a + (s.grounded ? 0 : s.health), 0) / states.length) : 0
 
-  // status of the selected aircraft — drives the floating "pointer" chip over the 3D
-  const status = st.grounded ? { c: 'var(--red)', l: 'grounded', attn: true }
-    : (st.health != null && st.health < 40) ? { c: 'var(--amber)', l: 'needs attention', attn: true }
-      : { c: 'var(--cyan)', l: 'healthy', attn: false }
+  // worst-first ordering for the annunciator
+  const ranked = [...states].sort((a: any, b: any) =>
+    (b.grounded ? 1 : 0) - (a.grounded ? 1 : 0) || (a.health ?? 100) - (b.health ?? 100))
 
   return (
-    <div className="page">
-      <div className="page-head">
-        <div className="eyebrow">Predictive Aircraft Health · Edge Digital Twin</div>
-        <h1>Fleet Overview</h1>
-        <p>A live, per-tail digital twin running offline at the edge. It reads each aircraft's condition, predicts what will need maintenance before it fails, and tells you which jets need attention now. Select any aircraft to inspect it.</p>
-      </div>
-
-      {/* the 3D twin — a spacious, minimalist hero */}
-      <div className="stage-card">
-        <ThreeScene ref={scene} onDefectClick={(i) => scene.current?.flyToDefect(i)} />
-        <div className="hud-frame" />
-        {tail ? <div className={`statuschip ${status.attn ? 'attn' : ''}`} style={{ ['--sc' as any]: status.c }}>
-          <span className="scdot" /><span className="sctail">{sel}</span><span className="scsep">·</span><span className="scstate">{status.l}</span>
-        </div> : null}
-        <div className="loadmsg" id="loadmsg"><span className="spin" /><span id="loadtxt">Loading airframe…</span></div>
-        <div className="badge">
-          <HealthRing health={st.health ?? 0} grounded={st.grounded} />
-          <div>
-            <div className="tl">{sel || '—'}</div>
-            <div className="sub">{tail ? (st.grounded ? 'grounded · beyond limit' : `health ${st.health}/100 · ${st.open_defects || 0} open`) : 'select an aircraft'}</div>
-            {st.action ? <div className="act"><span className={`pill ${attn(st.health, st.grounded) ? 'hot' : 'calm'}`}>{(st.basis || 'plan').toUpperCase()}</span><br />{st.action}</div> : null}
+    <div className="console">
+      {/* ── master status rail ─────────────────────────────── */}
+      <div className="rail">
+        <Tile k="fleet" v={states.length} sub="tails under twin" />
+        <div className="tile">
+          <div className="t-k">status</div>
+          <div className="t-lamps">
+            <span className="lamp go">{go}<i>go</i></span>
+            <span className="lamp caution">{caution}<i>caution</i></span>
+            <span className="lamp stop">{grounded}<i>stop</i></span>
           </div>
         </div>
-        <div className="legend">
-          <div className="hd">airframe health</div>
-          <div>healthy <span className="sw cy" /></div>
-          <div><b style={{ color: 'var(--amber)' }}>needs attention</b> <span className="sw am" /></div>
-          <div>grounded <span className="sw rd" /></div>
+        <Tile k="fleet health" v={avg} unit="/100" col={sevCol(avg)} sub="0 = grounded · 100 = pristine" />
+        <Tile k="needs attention" v={caution + grounded} col={caution + grounded ? 'var(--amber)' : undefined} sub="tails to action now" />
+        <Link to="/planning" className="tile save-tile">
+          <div className="t-k">saved this week</div>
+          <div className="t-v" style={{ color: 'var(--cyan)' }}>{ledger ? inr(ledger.net_value) : '—'}<span className="save-star">*</span></div>
+          <div className="t-sub">indicative — edit costs on Cost →</div>
+        </Link>
+      </div>
+
+      {/* ── fleet annunciator (the "at a glance" signature) ── */}
+      <section className="panel col-fleet">
+        <header className="p-head">fleet annunciator
+          <button className="addtail" onClick={onAdd} disabled={adding}>{adding ? '…' : '+ add aircraft'}</button>
+        </header>
+        <div className="annun">
+          {ranked.map((s: any) => {
+            const stt = statOf(s)
+            return <button key={s.tail} className={`ann-row ${s.tail === sel ? 'sel' : ''}`} onClick={() => selectTail(s.tail)}>
+              <span className={`ann-lamp ${stt}`} />
+              <span className="ann-tail">{s.tail}</span>
+              <span className="ann-bar"><i style={{ width: Math.max(s.grounded ? 100 : s.health, 5) + '%', background: STAT_COL[stt] }} /></span>
+              <span className="ann-v" style={{ color: STAT_COL[stt] }}>{s.grounded ? 'GND' : s.health}</span>
+            </button>
+          })}
+          {!states.length ? <p className="muted" style={{ padding: 12 }}>Bringing the fleet online…</p> : null}
         </div>
-        <div className="viewbtns">
-          {['orbit', 'top', 'side'].map(v => <button key={v} className={view === v ? 'on' : ''} onClick={() => { setView(v); scene.current?.setView(v) }}>{v[0].toUpperCase() + v.slice(1)}</button>)}
+      </section>
+
+      {/* ── twin viewport ──────────────────────────────────── */}
+      <section className="col-twin">
+        <div className="stage-card">
+          <ThreeScene ref={scene} onDefectClick={(i) => scene.current?.flyToDefect(i)} />
+          <div className="hud-frame" />
+          <div className="loadmsg" id="loadmsg"><span className="spin" /><span id="loadtxt">Loading airframe…</span></div>
+          <div className="badge">
+            <HealthRing health={st.health ?? 0} grounded={st.grounded} />
+            <div>
+              <div className="tl">{sel || '—'}</div>
+              <div className="sub">{tail ? (st.grounded ? 'grounded · beyond limit' : `health ${st.health}/100 · ${st.open_defects || 0} open`) : 'select an aircraft'}</div>
+              {st.action ? <div className="act"><span className={`pill ${attn(st.health, st.grounded) ? 'hot' : 'calm'}`}>{(st.basis || 'plan').toUpperCase()}</span><br />{st.action}</div> : null}
+            </div>
+          </div>
+          <div className="viewbtns">
+            {['orbit', 'top', 'side'].map(v => <button key={v} className={view === v ? 'on' : ''} onClick={() => { setView(v); scene.current?.setView(v) }}>{v[0].toUpperCase() + v.slice(1)}</button>)}
+          </div>
         </div>
-        <div className="hint">drag to orbit · scroll to zoom</div>
-      </div>
 
-      {/* time-projection — clearly explained */}
-      <div className="card">
-        <h2>Look into the future <span className="tt">condition projection</span></h2>
-        <p className="caption" style={{ marginTop: 0, marginBottom: 14 }}>Drag the slider to <b>fast-forward the fleet in flight cycles</b>. The twin grows every known defect at its measured rate and re-checks it against the limit — so you can see <b>which aircraft will need maintenance, and roughly when</b>, before it happens.</p>
-        <div className="scrub inline">
-          <label>Fast-forward</label>
-          <span className="val">{scrub === 0 ? 'today' : `+${scrub.toLocaleString()} flight cycles`}</span>
-          <input type="range" min={0} max={12000} step={250} value={scrub} onChange={e => scrubTo(+e.target.value)} />
-          <span className="fs" dangerouslySetInnerHTML={{ __html: (fleetStat || '').replace(/(\d+)/g, '<b>$1</b>') }} />
+        {/* fleet time machine — ▶ plays the WHOLE fleet forward through the twin */}
+        <div className="scrubcard">
+          <div className="scrub inline">
+            <button className={`playbtn ${playing ? 'on' : ''}`} onClick={() => setPlaying(p => !p)} title={playing ? 'pause' : 'run simulation'}>{playing ? '❚❚' : '▶'}</button>
+            <label>simulate&nbsp;fleet</label>
+            <span className="val">{scrub === 0 ? 'today' : `+${scrub.toLocaleString()} cyc`}</span>
+            <input type="range" min={0} max={SIM_MAX} step={250} value={scrub} onChange={e => { setPlaying(false); scrubTo(+e.target.value) }} />
+            {scrub > 0
+              ? <button className="resetbtn" onClick={() => { setPlaying(false); scrubTo(0) }}>reset</button>
+              : <span className="fs">every tail ages together</span>}
+          </div>
+          <Link to="/pipeline" className="stage-rail" title="ML pipeline">
+            {PIPELINE.map((p, i) => <span key={p} className="stg">{p}{i < PIPELINE.length - 1 ? <em>▸</em> : null}</span>)}
+          </Link>
         </div>
-      </div>
+      </section>
 
-      {/* priority alerts — the "what needs attention now" list */}
-      <div className="card">
-        <h2>Needs attention now <span className="tt">priority alerts</span></h2>
-        <p className="caption" style={{ marginTop: 0, marginBottom: 14 }}>The twin ranks the fleet by urgency so nothing slips: <b>red</b> = grounded / act now, <b>amber</b> = degrading fast, <b>grey</b> = at-risk but queued behind hangar capacity.</p>
-        <PriorityAlerts />
-      </div>
-
-      {/* fleet maintenance schedule (the condition-based schedule; no rupees here) */}
-      <div className="card">
-        <h2>Maintenance schedule <span className="tt">condition-based, not calendar</span></h2>
-        <p className="caption" style={{ marginTop: 0, marginBottom: 14 }}>Every aircraft ranked worst-first, with the twin's recommended action — <b>service now</b>, <b>service this window</b>, or <b>safe to defer</b> — decided by actual condition instead of a fixed calendar. The number on the right is the health index.</p>
-        <FleetBoard />
-      </div>
-
-      {/* key metrics — each with a plain-English description */}
-      <div className="grid c4">
-        <div className="metric"><div className="v">{states.length}</div><div className="k">aircraft (tails) under twin management</div></div>
-        <div className="metric"><div className="v" style={{ color: grounded ? 'var(--red)' : undefined }}>{grounded}</div><div className="k">grounded — beyond-limit, not airworthy</div></div>
-        <div className="metric"><div className="v" style={{ color: sevCol(avg) }}>{avg}<span style={{ fontSize: 15, color: 'var(--ink-3)' }}>/100</span></div><div className="k">average fleet health (100 = pristine, 0 = grounded)</div></div>
-        <div className="metric"><div className="v">{openFindings}</div><div className="k">open findings awaiting action across the fleet</div></div>
-      </div>
-
-      {/* fleet strip */}
-      <div className="card">
-        <h2>Fleet <span className="tt">click a card to inspect</span></h2>
-        <FleetGrid />
-        <p className="caption">Each card shows the aircraft's <b>tail number</b>, its <b>health index (x/100)</b>, and how many <b>open findings</b> it has. The coloured bar is the same health, at a glance.</p>
-      </div>
+      {/* ── copilot console ────────────────────────────────── */}
+      <section className="panel col-copilot">
+        <header className="p-head">mro copilot<span className="p-note">tool-calling</span></header>
+        <Copilot />
+      </section>
     </div>
   )
+}
+
+function Tile({ k, v, unit, sub, col }: { k: string, v: any, unit?: string, sub?: string, col?: string }) {
+  return <div className="tile">
+    <div className="t-k">{k}</div>
+    <div className="t-v" style={{ color: col }}>{v}{unit ? <span className="t-u">{unit}</span> : null}</div>
+    {sub ? <div className="t-sub">{sub}</div> : null}
+  </div>
 }

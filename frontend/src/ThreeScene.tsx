@@ -11,7 +11,14 @@ export interface SceneHandle {
 }
 
 const GRADE_SIZE: Record<string, number> = { minor: .6, major: .85, critical: 1.05, 'beyond-limit': 1.3, unknown: .7 }
-const ACCENT = '#e0842a', CYAN = '#35e0d0', AMBER = '#f2a93b', RED = '#ff5b6a'
+const ACCENT = '#ffaa2b', CYAN = '#34e0c8', AMBER = '#ffaa2b', RED = '#ff4d5e'
+// crack severity → marker colour (CAS code: amber = caution, coral = critical/grounded)
+const sevColor = (grade: string) => (grade === 'critical' || grade === 'beyond-limit') ? RED : AMBER
+const hexRgb = (h: string) => { const n = parseInt(h.slice(1), 16); return `${n >> 16 & 255},${n >> 8 & 255},${n & 255}` }
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath()
+}
 
 export default forwardRef<SceneHandle, { onDefectClick?: (i: number) => void }>(function ThreeScene(props, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -128,13 +135,43 @@ export default forwardRef<SceneHandle, { onDefectClick?: (i: number) => void }>(
     let hotspots: any[] = []; const raycaster = new THREE.Raycaster()
     const _probe = new THREE.Raycaster(); const _Z = new THREE.Vector3(0, 0, 1)
     let selectedDefects: any[] = []
-    function glowSprite() {
+    const maxAniso = renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 1
+    function sprite(canvas: HTMLCanvasElement) {
+      const tex = new THREE.CanvasTexture(canvas)
+      tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter   // crisp, no mipmap smear
+      tex.generateMipmaps = false; tex.anisotropy = maxAniso
+      if ('encoding' in tex) tex.encoding = THREE.sRGBEncoding
+      return new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: true }))
+    }
+    function haloSprite(hex: string) {
       const c = document.createElement('canvas'); c.width = c.height = 128
-      const ctx = c.getContext('2d')!; const g = ctx.createRadialGradient(64, 64, 2, 64, 64, 62)
-      g.addColorStop(0, 'rgba(224,125,23,.92)'); g.addColorStop(.35, 'rgba(224,125,23,.5)')
-      g.addColorStop(.7, 'rgba(224,125,23,.14)'); g.addColorStop(1, 'rgba(224,125,23,0)')
+      const ctx = c.getContext('2d')!; const rgb = hexRgb(hex); const g = ctx.createRadialGradient(64, 64, 2, 64, 64, 62)
+      g.addColorStop(0, `rgba(${rgb},.82)`); g.addColorStop(.35, `rgba(${rgb},.45)`)
+      g.addColorStop(.7, `rgba(${rgb},.12)`); g.addColorStop(1, `rgba(${rgb},0)`)
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(64, 64, 62, 0, 7); ctx.fill()
-      return new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, depthTest: true }))
+      return sprite(c)
+    }
+    // an actual jagged crack glyph, drawn on a billboarded sprite
+    function crackSprite(hex: string) {
+      const c = document.createElement('canvas'); c.width = c.height = 128
+      const ctx = c.getContext('2d')!; ctx.strokeStyle = hex; ctx.lineJoin = 'round'; ctx.lineCap = 'round'
+      ctx.shadowColor = hex; ctx.shadowBlur = 7; ctx.lineWidth = 5
+      ctx.beginPath(); ctx.moveTo(66, 16)      // main fracture, off-vertical zig-zag
+      ;[[56, 40], [72, 56], [58, 72], [74, 90], [60, 112]].forEach(([x, y]) => ctx.lineTo(x, y)); ctx.stroke()
+      ctx.lineWidth = 3                          // two branch cracks
+      ctx.beginPath(); ctx.moveTo(72, 56); ctx.lineTo(92, 60); ctx.stroke()
+      ctx.beginPath(); ctx.moveTo(58, 72); ctx.lineTo(40, 78); ctx.stroke()
+      return sprite(c)
+    }
+    // floating tag: "CRACK · 8mm" in the severity colour — supersampled 2× so it stays crisp
+    function labelSprite(text: string, hex: string) {
+      const W = 512, H = 128, c = document.createElement('canvas'); c.width = W; c.height = H
+      const ctx = c.getContext('2d')!; ctx.font = '600 48px "IBM Plex Mono", ui-monospace, monospace'
+      const bw = Math.min(W - 10, ctx.measureText(text).width + 64), bh = 82, bx = (W - bw) / 2, by = (H - bh) / 2
+      ctx.fillStyle = 'rgba(8,11,15,.9)'; roundRect(ctx, bx, by, bw, bh, 16); ctx.fill()
+      ctx.strokeStyle = hex; ctx.lineWidth = 3.5; roundRect(ctx, bx, by, bw, bh, 16); ctx.stroke()
+      ctx.fillStyle = '#eaf1f6'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, W / 2, H / 2 + 2)
+      const s = sprite(c); s.userData.aspect = W / H; return s
     }
     const segAngle = (loc: string) => { const n = parseInt((loc || '').replace(/\D/g, '')) || 0; return ((n % 12) / 12 - 0.5) * 2.1 }
     const defectX = (loc: string) => { const n = parseInt((loc || '').replace(/\D/g, '')) || 0; return 2.6 - (n % 12) * 0.5 }
@@ -160,22 +197,29 @@ export default forwardRef<SceneHandle, { onDefectClick?: (i: number) => void }>(
       return { pos: new THREE.Vector3(x, Math.cos(ang) * R, Math.sin(ang) * R), nrm: dir.clone() }
     }
     function clearHotspots() { hotspots.forEach(h => plane.remove(h.grp)); hotspots = [] }
-    // Minimalist: defect markers on the airframe are intentionally OFF (defects live in the
-    // Aircraft Health page). Left as a no-op so the rest of the wiring stays intact.
-    const SHOW_MARKERS = false
+    // Attention markers on the airframe: a crack glyph inside a pulsing targeting reticle,
+    // coloured by severity, with a floating "CRACK · 8mm" tag. Click to fly to it.
     function addHotspot(def: any) {
-      if (!SHOW_MARKERS) return
       const { pos, nrm } = skinPointFor(def)
       const sz = GRADE_SIZE[def.grade] || 0.7
-      const grp = new THREE.Group(); grp.position.copy(pos).add(nrm.clone().multiplyScalar(0.012))
-      const ring = new THREE.Mesh(new THREE.RingGeometry(0.085 * sz + 0.02, 0.13 * sz + 0.03, 30),
-        new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false }))
+      const col = sevColor(def.grade)
+      const grp = new THREE.Group(); grp.position.copy(pos).add(nrm.clone().multiplyScalar(0.02))
+      // targeting reticle, flat to the skin
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.12 * sz + 0.03, 0.155 * sz + 0.035, 44),
+        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.92, side: THREE.DoubleSide, depthWrite: false }))
       ring.quaternion.setFromUnitVectors(_Z, nrm.clone().normalize())
-      const core = new THREE.Mesh(new THREE.SphereGeometry(0.045 * sz + 0.028, 18, 18),
-        new THREE.MeshStandardMaterial({ color: ACCENT, emissive: ACCENT, emissiveIntensity: 1.3, metalness: 0.1, roughness: 0.45 }))
-      const halo = glowSprite(); const base = 0.55 * sz + 0.26; halo.scale.setScalar(base)
-      grp.add(ring); grp.add(core); grp.add(halo); plane.add(grp)
-      hotspots.push({ grp, core, halo, ring, def, base, pos: grp.position.clone(), nrm })
+      // crack glyph + soft halo, billboarded
+      const halo = haloSprite(col); const base = 0.5 * sz + 0.24; halo.scale.setScalar(base)
+      const crack = crackSprite(col); const crackBase = 0.28 * sz + 0.13; crack.scale.setScalar(crackBase)
+      // invisible core sized to the reticle — the click target
+      const core = new THREE.Mesh(new THREE.SphereGeometry(0.06 * sz + 0.05, 14, 14),
+        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.001 }))
+      // floating tag above the marker
+      const txt = `${(def.defect_type || 'defect').toUpperCase()} · ${def.size_mm}mm`
+      const label = labelSprite(txt, col); const lh = 0.3, lw = lh * (label.userData.aspect || 4)
+      label.scale.set(lw, lh, 1); label.position.set(0, 0.42 * sz + 0.26, 0)
+      grp.add(ring); grp.add(halo); grp.add(crack); grp.add(core); grp.add(label); plane.add(grp)
+      hotspots.push({ grp, core, halo, crack, ring, label, def, base, crackBase, pos: grp.position.clone(), nrm })
     }
     function replaceHotspots() { clearHotspots(); selectedDefects.forEach(addHotspot) }
 
@@ -234,9 +278,11 @@ export default forwardRef<SceneHandle, { onDefectClick?: (i: number) => void }>(
         else { m.material.emissiveIntensity *= 0.9 }
       })
       hotspots.forEach(h => {
-        const sel = h.selected; const s = (sel ? 1.4 : 1) * (1 + 0.18 * Math.sin(clock * 3 + h.grp.position.x))
-        h.halo.scale.setScalar(h.base * s); h.core.material.emissiveIntensity = sel ? 2.4 : 1.3
-        if (h.ring) h.ring.material.opacity = sel ? 1 : 0.9
+        const sel = h.selected; const beat = 0.5 + 0.5 * Math.sin(clock * 3 + h.grp.position.x)
+        h.halo.scale.setScalar(h.base * (sel ? 1.35 : 1) * (1 + 0.16 * (beat - 0.5)))
+        h.crack.scale.setScalar(h.crackBase * (sel ? 1.25 : 1))
+        h.ring.material.opacity = (sel ? 1 : 0.85) * (0.6 + 0.4 * beat)
+        h.ring.scale.setScalar(sel ? 1.12 : 1)
       })
       if (flyTarget) { controls.target.lerp(flyTarget, 0.08); if (controls.target.distanceTo(flyTarget) < 0.02) flyTarget = null }
       controls.update(); renderer.render(scene, camera)
