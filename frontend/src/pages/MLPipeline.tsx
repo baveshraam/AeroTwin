@@ -1,100 +1,132 @@
 import { useEffect, useState } from 'react'
 
-/* Live edge-inference pipeline: NGAFID flight-feature vectors fan through an adaptive
-   load balancer into an autoscaling pool of quantized model replicas. Metrics run on a
-   small in-page simulation of the serving loop so the console is always live. */
+/* AeroTwin — ML Pipeline (edge, offline).
+   Honest reframe of the serving console. The box serves ONE twin on a ₹10k Pi in
+   airplane mode, so there is no cluster to load-balance and nothing to autoscale.
+   The architecture IS the product: train off-box, serve at the edge, one audited
+   promotion gate between. All readouts are a small deterministic in-page simulation
+   (no Math.random) so the console is always live; model quality is shown as
+   method + provenance, never a fabricated point score. */
 
-const STAGES = [
-  { k: 'ingest', t: 'Ingest', d: 'NGAFID telemetry · 23 channels' },
-  { k: 'feat', t: 'Feature store', d: '70 engine aggregates · versioned' },
-  { k: 'lb', t: 'Load balancer', d: 'least-loaded · autoscaling' },
-  { k: 'serve', t: 'Model pool', d: 'quantized replicas · INT8' },
-  { k: 'twin', t: 'Digital twin', d: 'per-tail state · RUL band' },
-  { k: 'reg', t: 'Registry', d: 'canary · shadow · rollback' },
+// the real on-box chain: inspection -> priced decision
+const CHAIN = [
+  { k: 'detect', t: 'Detect', d: 'YOLOv8-seg · crack / dent' },
+  { k: 'size', t: 'Size', d: 'ArUco fiducial · → mm' },
+  { k: 'grade', t: 'Grade', d: 'vs SRM allowable limit' },
+  { k: 'twin', t: 'Twin', d: 'per-tail record · health' },
+  { k: 'rul', t: 'Forecast', d: 'Paris-MC + Bayesian · P10/50/90' },
+  { k: 'plan', t: 'Prescribe', d: 'capacity-aware fleet plan' },
+  { k: 'price', t: 'Price', d: '₹ ledger vs calendar' },
 ]
 
+// the two planes either side of the gate
+const TRAIN = ['Versioned data', 'Feature transform', 'Leakage guard · CI', 'Fit — Virkler-calibrated', 'Validate + coverage', 'Model card']
+const EDGE = ['Quantize + re-calibrate', 'Deterministic inference', 'Twin + band + reason', 'Rule-baseline fallback', 'Drift + shadow']
+
+// real models — honest status, no invented accuracy
 const MODELS = [
-  { id: 'risk-hgb', task: 'Maintenance-need P()', arch: 'HistGradientBoosting', ver: 'v4.2', size: '2.1 MB', q: 'INT8', status: 'serving', metric: 'ROC-AUC 0.91' },
-  { id: 'rul-qgbm', task: 'RUL P10 / P50 / P90', arch: 'Quantile GBM ×3', ver: 'v3.1', size: '3.4 MB', q: 'INT8', status: 'serving', metric: 'P50 MAE 1.2 d' },
-  { id: 'crack-seg', task: 'Skin crack / dent', arch: 'YOLOv8-seg', ver: 'v2.0', size: '11.9 MB', q: 'INT8', status: 'canary', metric: 'mAP 0.87' },
-  { id: 'anomaly-pc', task: 'Zero-label anomaly', arch: 'PatchCore', ver: 'v1.4', size: '8.6 MB', q: 'FP16', status: 'shadow', metric: 'AUROC 0.98' },
+  { id: 'crack-seg', task: 'Skin crack / dent', arch: 'YOLOv8-seg', ver: 'v0.9', size: '11.9 MB', q: 'INT8', status: 'shadow', metric: 'recall-first · POD' },
+  { id: 'anomaly-pc', task: 'Zero-label anomaly', arch: 'PatchCore', ver: 'v1.4', size: '8.6 MB', q: 'FP16', status: 'canary', metric: 'train-on-normal' },
+  { id: 'rul-paris', task: 'RUL P10 / P50 / P90', arch: 'Paris-law Monte-Carlo', ver: 'v3.1', size: '12 KB', q: '—', status: 'serving', metric: '80% band · target' },
+  { id: 'rul-bayes', task: 'Per-tail growth', arch: 'Normal–Normal conjugate', ver: 'v2.0', size: '4 KB', q: '—', status: 'serving', metric: 'tightens each scan' },
+  { id: 'fed-prior', task: 'Fleet growth prior', arch: 'FedAvg + ε-DP', ver: 'v1.2', size: '1 KB', q: '—', status: 'serving', metric: 'ε = 1.0' },
 ]
 
-// steady-state autoscale history (fixed — this is a log, not a slot machine)
+// per-stage edge inference budget (ms, INT8 CPU on a Pi 5 — illustrative, honest scale)
+const BUDGET = [
+  { n: 'crack-seg (INT8)', ms: 31 },
+  { n: 'anomaly-pc (PatchCore)', ms: 22 },
+  { n: 'size + grade', ms: 2 },
+  { n: 'RUL Monte-Carlo ×400', ms: 4 },
+  { n: 'Bayes + twin + plan', ms: 3 },
+]
+
 const EVENTS = [
-  { t: '09:12', m: 'scaled 3→4 replicas · sustained load 88% > target' },
-  { t: '08:47', m: 'canary crack-seg v2.0 promoted · error-rate within SLO' },
-  { t: '08:31', m: 'risk-hgb v4.2 rolled out · shadow parity confirmed' },
+  { t: '−00:04', m: 'crack-seg v0.9 → shadow · logged, not acted on' },
+  { t: '−02:11', m: 'anomaly-pc v1.4 → canary · held-out AUROC nominal' },
+  { t: '−14:30', m: 'rul-paris re-calibrated post-INT8 · coverage re-checked' },
 ]
 
 export default function MLPipeline() {
   // one slow deterministic clock — the console breathes, it does not jitter
   const [t, setT] = useState(0)
-  useEffect(() => { const id = setInterval(() => setT(x => x + 1), 2000); return () => clearInterval(id) }, [])
+  useEffect(() => { const id = setInterval(() => setT(x => x + 1), 1400); return () => clearInterval(id) }, [])
 
-  // steady operating point with a gentle, deterministic sway (no Math.random anywhere)
-  const replicas = 4
-  const rate = Math.round(46 + 5 * Math.sin(t / 6))               // ~41–51 flights/s
-  const load = rate / (replicas * 14)                             // sustainable 14/s/replica
-  const utils = Array.from({ length: replicas }, (_, i) => Math.round(load * 100 + 5 * Math.sin(t / 5 + i * 1.3)))
-  const p99 = Math.round(74 + 10 * Math.sin(t / 6 + 0.6))         // ~64–84 ms, comfortably under SLO
-  const queue = 0
+  const live = t % CHAIN.length                              // the stage currently processing
+  const p95 = Math.round(46 + 5 * Math.sin(t / 5))           // ~41–51 ms, INT8 CPU
+  const chain = Math.round(208 + 14 * Math.sin(t / 6 + 0.5)) // end-to-end sense->price
   const drift = 0.12
-  const events = EVENTS
   const driftHot = drift > 0.25
+  const total = BUDGET.reduce((a, b) => a + b.ms, 0)
+
   return (
     <div className="page">
       <div className="page-head">
-        <div className="eyebrow">Edge Inference · Autoscaling</div>
-        <h1>ML Serving Pipeline</h1>
-        <p>Flight-feature vectors stream off the NGAFID feed and fan through an adaptive load balancer into an autoscaling pool of quantized model replicas — the same serving loop that runs on the edge box, offline.</p>
+        <div className="eyebrow">Edge ML · Offline · Train-off-box / Serve-at-edge</div>
+        <h1>ML Pipeline</h1>
+        <p>The inspection-to-decision model chain that runs on the ₹10,000 Raspberry&nbsp;Pi in airplane mode — detect → size → grade → twin → forecast → prescribe → price. One twin, offline: there is no cluster to load-balance. The architecture is the product — train off-box, serve at the edge, with a single audited promotion gate between.</p>
       </div>
 
-      {/* live throughput readouts */}
+      {/* live edge readouts (edge-scale, honest) */}
       <div className="mlp-rail">
-        <MLTile k="throughput" v={rate.toFixed(0)} u="flights/s" col="var(--cyan)" />
-        <MLTile k="p99 latency" v={p99} u="ms" col={p99 > 130 ? 'var(--amber)' : undefined} />
-        <MLTile k="queue depth" v={queue} u="vectors" col={queue ? 'var(--amber)' : undefined} />
-        <MLTile k="replicas" v={replicas} u="INT8 nodes" col="var(--accent)" />
+        <MLTile k="p95 inference" v={p95} u="ms · INT8" col="var(--cyan)" />
+        <MLTile k="chain latency" v={chain} u="ms end-to-end" />
+        <MLTile k="models resident" v={5} u="INT8 · FP16" col="var(--accent)" />
+        <MLTile k="feature drift" v={drift.toFixed(2)} u="PSI · stable" col="var(--cyan)" />
       </div>
 
-      {/* architecture flow */}
+      {/* live serving path — the real chain */}
       <div className="card">
-        <h2>Serving path <span className="tt">sense → predict → twin</span></h2>
+        <h2>Serving path <span className="tt">sense → predict → prescribe → price</span></h2>
         <div className="mlp-flow">
-          {STAGES.map((s, i) => <div key={s.k} className={`mlp-stage ${s.k === 'lb' ? 'hot' : ''}`}>
-            <div className="ms-t">{s.t}</div>
+          {CHAIN.map((s, i) => <div key={s.k} className={`mlp-stage ${i === live ? 'live' : ''}`}>
+            <div className="ms-t">{s.t}{i === live ? <i className="ms-live" /> : null}</div>
             <div className="ms-d">{s.d}</div>
-            {i < STAGES.length - 1 ? <span className="ms-arrow">▸</span> : null}
+            {i < CHAIN.length - 1 ? <span className="ms-arrow">▸</span> : null}
           </div>)}
         </div>
       </div>
 
-      <div className="grid c2">
-        {/* adaptive load balancer */}
-        <div className="card">
-          <h2>Adaptive load balancer <span className="tt">least-loaded · autoscale</span></h2>
-          <div className="lb-in">
-            <span className="lb-inlbl">inbound</span>
-            <div className="lb-inbar"><i style={{ width: Math.min(100, rate / 78 * 100) + '%' }} /></div>
-            <span className="lb-inv">{rate.toFixed(0)}/s</span>
+      {/* two-plane architecture — the defensible spine */}
+      <div className="card">
+        <h2>Architecture <span className="tt">two planes · one gate</span></h2>
+        <div className="planes">
+          <div className="plane train">
+            <div className="plane-h"><b>① Training plant</b><span>off-box · workstation / CI · whole dataset</span><span className="econ">rigor over latency</span></div>
+            <div className="mlp-flow">
+              {TRAIN.map((s, i) => <div key={s} className="mlp-stage sm">
+                <div className="ms-t">{s}</div>
+                {i < TRAIN.length - 1 ? <span className="ms-arrow">▸</span> : null}
+              </div>)}
+            </div>
           </div>
-          <div className="lb-pool">
-            {utils.map((u, i) => <div key={i} className="lb-node">
-              <div className="ln-h"><span>node {i + 1}</span><b style={{ color: u > 90 ? 'var(--amber)' : 'var(--cyan)' }}>{u}%</b></div>
-              <div className="ln-bar"><i style={{ width: Math.min(100, u) + '%', background: u > 90 ? 'var(--amber)' : 'var(--cyan)' }} /></div>
-            </div>)}
+          <div className="plane gate">
+            <div className="plane-h"><b>⟐ Promotion gate + registry</b><span>content-addressed · full lineage → SHA-256 chain</span></div>
+            <div className="gate-life">
+              <span className="step">pass validation harness</span><span className="arr">+</span>
+              <span className="step">engineer sign-off</span><span className="arr">▸</span>
+              <span className="step">DRAFT</span><span className="arr">→</span><span className="step">SIGNED</span><span className="arr">→</span><span className="step">CLOSED</span>
+              <span className="glbl">rollback = previous signed hash</span>
+            </div>
           </div>
-          <div className="lb-log">
-            {events.map((e, i) => <div key={i} className="lb-ev"><span className="lb-t">{e.t}</span>{e.m}</div>)}
+          <div className="plane edge">
+            <div className="plane-h"><b>② Edge runtime</b><span>on-box · Pi · CPU-only · airplane-mode</span><span className="econ">bounded worst-case latency</span></div>
+            <div className="mlp-flow">
+              {EDGE.map((s, i) => <div key={s} className="mlp-stage sm">
+                <div className="ms-t">{s}</div>
+                {i < EDGE.length - 1 ? <span className="ms-arrow">▸</span> : null}
+              </div>)}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* model registry */}
+      <div className="grid c2">
+        {/* model registry — real, honest */}
         <div className="card">
-          <h2>Model registry <span className="tt">versioned · canary · rollback</span></h2>
+          <h2>Model registry <span className="tt">versioned · shadow · rollback</span></h2>
           <div className="mreg">
-            <div className="mreg-row mreg-head"><span>model</span><span>task</span><span>size</span><span>status</span><span>quality</span></div>
+            <div className="mreg-row mreg-head"><span>model</span><span>task</span><span>size</span><span>status</span><span>method</span></div>
             {MODELS.map(m => <div key={m.id} className="mreg-row">
               <span className="mr-id">{m.id}<i>{m.arch} · {m.ver}</i></span>
               <span className="mr-task">{m.task}</span>
@@ -103,20 +135,51 @@ export default function MLPipeline() {
               <span className="mono">{m.metric}</span>
             </div>)}
           </div>
+          <div className="reg-note">Quality is logged as method + provenance — measured numbers land here on demo day, never a fabricated score. <b>crack-seg runs in shadow</b> (mock sensor until the detector converges); the physics + Bayesian models serve live at kilobytes.</div>
+        </div>
+
+        {/* edge runtime — replaces the fictitious load balancer */}
+        <div className="card">
+          <h2>Edge runtime <span className="tt">one process · bounded queue</span></h2>
+          <div className="lb-in">
+            <span className="lb-inlbl">budget</span>
+            <div className="lb-inbar"><i style={{ width: Math.min(100, total / 90 * 100) + '%' }} /></div>
+            <span className="lb-inv">{total} ms</span>
+          </div>
+          <div className="edge-rows">
+            {BUDGET.map((b, i) => {
+              const w = b.ms / total * 100
+              const sway = 1 + 0.06 * Math.sin(t / 5 + i)
+              return (
+                <div key={b.n} className="lb-node">
+                  <div className="ln-h"><span>{b.n}</span><b style={{ color: 'var(--cyan)' }}>{Math.round(b.ms * sway)} ms</b></div>
+                  <div className="ln-bar"><i style={{ width: Math.min(100, w) + '%', background: 'var(--cyan)' }} /></div>
+                </div>
+              )
+            })}
+          </div>
+          <div className="edge-facts">
+            <span><i className="en-led" />single deterministic process · queue depth 0</span>
+            <span><i className="ann-lamp go" />rule-baseline fallback · ARMED</span>
+            <span><i className="ann-lamp caution" />delayed labels reconcile → retrain via gate</span>
+          </div>
+          <div className="lb-log">
+            {EVENTS.map((e, i) => <div key={i} className="lb-ev"><span className="lb-t">{e.t}</span>{e.m}</div>)}
+          </div>
         </div>
       </div>
 
-      {/* drift monitor */}
+      {/* drift monitor — honest banding, delayed-label aware */}
       <div className="card">
-        <h2>Feature-drift monitor <span className="tt">prod vs training distribution</span></h2>
+        <h2>Feature-drift monitor <span className="tt">per-feature · importance-weighted</span></h2>
         <div className="drift">
           <div className="drift-g">
             <div className="drift-track"><i style={{ width: Math.min(100, drift / 0.34 * 100) + '%', background: driftHot ? 'var(--amber)' : 'var(--cyan)' }} /></div>
-            <div className="drift-marks"><span>0.0</span><span className="drift-slo">SLO 0.25</span><span>0.34</span></div>
+            <div className="drift-marks"><span>0.0 stable</span><span className="drift-slo">watch 0.10</span><span className="drift-slo">act 0.25</span><span>0.34</span></div>
           </div>
           <div className="drift-v">
             <b style={{ color: driftHot ? 'var(--amber)' : 'var(--cyan)' }}>PSI {drift.toFixed(2)}</b>
-            <span>{driftHot ? 'drift above threshold — canary retrain queued' : 'distribution stable — no retrain needed'}</span>
+            <span>{driftHot ? 'above act threshold — retrain request queued to the gate' : 'within the stable band — true accuracy reconciles when labels mature (weeks later), then a retrain request re-enters the gate'}</span>
           </div>
         </div>
       </div>
